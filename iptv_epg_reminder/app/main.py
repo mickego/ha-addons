@@ -776,14 +776,24 @@ async def api_channelmap_del(request):
     return J({"ok": True})
 
 
+async def api_series(request):
+    try:
+        return J({"ok": True, "seasons": await stream.series_info(request.match_info["sid"], state.CFG)})
+    except Exception as e:
+        return J({"ok": False, "errors": [scrub(e)]})
+
+
 async def api_play(request):
     b = await request.json()
     d = await asyncio.to_thread(engine.load_defaults_sync)
     ents = [str(x) for x in (b.get("targets") or d.get("play_entities") or [])]
     if not ents:
         return J({"ok": False, "errors": ["err_pick_player"]})
+    vod = None
+    if b.get("kind") in ("movie", "episode"):
+        vod = {"kind": b["kind"], "id": str(b.get("id") or ""), "ext": str(b.get("ext") or ""), "name": str(b.get("name") or "")}
     err = await engine.do_play_logged(ents, str(b.get("channel_id") or ""), b.get("fmt") or d.get("play_fmt"),
-                                      b.get("content_type") or d.get("play_ctype"))
+                                      b.get("content_type") or d.get("play_ctype"), vod)
     return J({"ok": not err, "errors": [err] if err else []})
 
 
@@ -844,6 +854,8 @@ def make_app():
         web.get("/stream/seg", stream.segment),
         web.get("/stream/{cid}.m3u8", stream.playlist),
         web.post("/api/play", api_play),
+        web.get("/api/series/{sid}", api_series),
+        web.get("/stream/vod/{kind}/{id}.{ext}", stream.vod),
         web.get("/hls.min.js", hls_js),
         web.get("/api/status", api_status),
         web.get("/api/categories", api_categories),

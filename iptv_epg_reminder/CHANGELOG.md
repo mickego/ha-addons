@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0
+- Movies and series can now be played too: ▶ Play on a media player or watch in the panel (series: pick season and episode)
+- Movie/episode proxy with seek support for the in-panel player (browsers cannot play .mkv – use a media player for those)
+- Content type is chosen from the file extension (mp4, mkv, avi …); VLC still gets `music`
+
 ## 2.2.0
 - Play TV: new reminder action **Play channel** sends the live stream to any media player (Chromecast / Google TV, VLC, Kodi …) via `media_player.play_media`
 - ▶ Play buttons in search results, channel lists and the guide: play on a device or **watch in the panel** (HLS player with built-in stream proxy – your login never reaches the browser)

@@ -223,8 +223,9 @@ async def refresh_catalog(cfg: dict) -> dict:
                         year = _s(it.get("year") or it.get("releaseDate") or it.get("release_date"))[:4]
                         rows.append((kind, iid, _s(it.get("name")).strip(), _s(it.get("category_id")), year,
                                      _s(it.get("rating")), _s(it.get("stream_icon") or it.get("cover")),
-                                     _int(it.get("added") or it.get("last_modified"))))
-                    c.executemany("insert or replace into catalog values(?,?,?,?,?,?,?,?)", rows)
+                                     _int(it.get("added") or it.get("last_modified")),
+                                     _s(it.get("container_extension")) if kind == "movie" else ""))
+                    c.executemany("insert or replace into catalog(kind,id,name,cat,year,rating,cover,added,ext) values(?,?,?,?,?,?,?,?,?)", rows)
                     if old_ids:
                         new_rows = [r for r in rows if r[1] not in old_ids]
                         out["new"][kind] = [r[2] for r in new_rows][:500]

@@ -453,6 +453,19 @@ async def run_action(act, ctx, d):
     raise RuntimeError(f"Unknown action {t}")
 
 
+async def do_play_vod(entities, kind, vid, ext, ctype, label):
+    if not entities:
+        raise RuntimeError("No media player chosen")
+    url, ext = await asyncio.to_thread(stream.resolve_vod, kind, vid, ext, state.CFG)
+    if not url:
+        raise RuntimeError("Movies/series require an Xtream source")
+    for mp in entities:
+        await ha.call("media_player", "play_media", {
+            "entity_id": mp, "media_content_id": url,
+            "media_content_type": stream.content_type_vod(mp, ext, ctype)})
+    return label
+
+
 async def do_play(entities, cid, fmt, ctype):
     """Spelar en kanal på mediaspelare. Kastar vid fel. Returnerar kanalnamnet (aldrig adressen)."""
     if not cid:
@@ -470,11 +483,14 @@ async def do_play(entities, cid, fmt, ctype):
     return name
 
 
-async def do_play_logged(entities, cid, fmt, ctype):
+async def do_play_logged(entities, cid, fmt, ctype, vod=None):
     err = ""
     name = cid
     try:
-        name = await do_play(entities, cid, fmt, ctype)
+        if vod:
+            name = await do_play_vod(entities, vod["kind"], vod["id"], vod.get("ext", ""), ctype, vod.get("name") or vod["id"])
+        else:
+            name = await do_play(entities, cid, fmt, ctype)
     except Exception as e:
         err = scrub(e)
     await hist(f"{T('a_play')}: {name}", "play", entities, not err, err)

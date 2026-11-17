@@ -21,7 +21,7 @@ Search live programs, series and movies from your IPTV/EPG provider (wildcards, 
 Enable *Advanced mode* in your user profile if you can't see the Repositories entry.
 
 ## Play TV
-With an Xtream account or M3U playlist: **▶ Play** on any media player (Chromecast/Google TV, VLC, Kodi), watch in the panel, or add the action **Play channel** to a reminder.
+With an Xtream account or M3U playlist: **▶ Play** channels, movies and series on any media player (Chromecast/Google TV, VLC, Kodi), watch in the panel, or add the action **Play channel** to a reminder.
 
 ## Dashboard cards
 Five Lovelace cards (next reminder, upcoming list, on now with channel-change button, last activity, status) for any dashboard – they read the add-on's sensors, so they work through Nabu Casa too.

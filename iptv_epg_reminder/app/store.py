@@ -15,7 +15,7 @@ create table if not exists programs(
 create index if not exists ix_prog_start on programs(start);
 create index if not exists ix_prog_stop on programs(stop);
 create table if not exists catalog(
-  kind text, id text, name text, cat text, year text, rating text, cover text, added integer,
+  kind text, id text, name text, cat text, year text, rating text, cover text, added integer, ext text,
   primary key(kind, id));
 create table if not exists categories(kind text, id text, name text, primary key(kind, id));
 create table if not exists reminders(
@@ -64,6 +64,8 @@ def init():
                      ("actions", "text"), ("opts", "text")):
         if col not in have:
             c.execute(f"alter table reminders add column {col} {ddl}")
+    if "ext" not in {r[1] for r in c.execute("pragma table_info(catalog)")}:
+        c.execute("alter table catalog add column ext text")
     if "url" not in {r[1] for r in c.execute("pragma table_info(channels)")}:
         c.execute("alter table channels add column url text")
     # Migrering: gamla "fired"-nycklar (före steg-modellen) får steg-suffix så inget skickas om

@@ -159,6 +159,7 @@ Needs an Xtream account (`epg_url`/`xtream_url`) or an M3U playlist (`playlist_u
 - **Dashboard card**: `epg-now-card` accepts `play: true` (+ optional `play_entity`, `play_format`) and shows a ▶ button per channel. It fires the event `iptv_epg_play` (`channel_id` or `number`, `entity_id`, `fmt`) which you can also fire from your own automations.
 - The stream address contains your login. It is sent to the media player but never stored in reminders, history, events or sensors. Many providers allow only one or a few simultaneous streams per account.
 - The in-panel player needs an HLS stream (`.m3u8`); plain `.ts` cannot be played by browsers.
+- **Movies and series** (Xtream only): ▶ Play on the movie/series cards. For series pick season and episode. Files are sent as-is (mp4, mkv …) – browsers cannot play .mkv, use a media player.
 
 ## 6. Privacy
 - The EPG/IPTV address and credentials exist only in the add-on configuration; the dashboard shows only the host name.
@@ -333,6 +334,7 @@ Kräver ett Xtream-konto (`epg_url`/`xtream_url`) eller en M3U-spellista (`playl
 - **Dashboardkort:** `epg-now-card` tar `play: true` (+ valfritt `play_entity`, `play_format`) och visar en ▶-knapp per kanal. Den skickar eventet `iptv_epg_play` (`channel_id` eller `number`, `entity_id`, `fmt`) som du också kan skicka från egna automationer.
 - Strömadressen innehåller din inloggning. Den skickas till mediaspelaren men sparas aldrig i påminnelser, historik, events eller sensorer. Många leverantörer tillåter bara en eller ett par samtidiga strömmar per konto.
 - Spelaren i panelen kräver HLS (`.m3u8`); rena `.ts`-strömmar kan inte spelas i webbläsare.
+- **Filmer och serier** (bara Xtream): ▶ Spela på film-/seriekorten. För serier väljer du säsong och avsnitt. Filerna skickas som de är (mp4, mkv …) – webbläsare kan inte spela .mkv, använd en mediaspelare.
 
 ## 6. Integritet
 - EPG-/IPTV-adressen och inloggningen finns bara i tilläggets konfiguration; dashboarden visar bara värdnamnet.
