@@ -10,12 +10,13 @@ from datetime import datetime, timedelta, timezone
 import ha
 import state
 import store
+import stream
 import tpl
 from i18n import tr
 from util import compile_query, scrub
 
 log = logging.getLogger("engine")
-AUDIBLE = ("tts", "sound")
+AUDIBLE = ("tts", "sound", "play")
 _LAST_PUB = {"ts": 0}
 
 
@@ -310,6 +311,7 @@ def build_ctx(rem, occ, now, cmap):
         "date": st.strftime("%Y-%m-%d"), "time": datetime.fromtimestamp(now, z).strftime("%H:%M"),
         "minutes": str(minutes), "label": rem["label"] or T("default_label"), "lead": str(rem["lead"]),
         "description": (occ.get("descr") or "")[:200], "category": occ.get("category") or "", "reminder_id": str(rem["id"]),
+        "channel_id": occ.get("channel_id") or "",
     }
     if rem["kind"] == "time":
         s = T("time_status", time=ctx["start"])
@@ -357,6 +359,8 @@ async def send_primary(rem, occ, ctx, now, d, prefix="", default_title=None, def
         buttons = [{"action": f"EPG|snooze|{n}|{token}", "title": T("snooze_btn", n=n)}]
         if ctx["number"] and entity:
             buttons.append({"action": f"EPG|tune|0|{token}", "title": T("tune_btn", number=ctx["number"])})
+        if ctx.get("channel_id") and d.get("play_entities"):
+            buttons.append({"action": f"EPG|play|0|{token}", "title": T("play_btn")})
     tag = f"epg_{rem['id']}_{occ['start']}_{zlib.crc32((occ['cname'] or '').encode()) % 100000}"
     errs = await ha.send(rem["ntype"], rem["targets"], title, message, tag=tag, image=occ.get("icon"),
                          tts_entity=d.get("tts_entity") or "", language=d.get("tts_language") or state.lang(),
@@ -417,6 +421,15 @@ async def run_action(act, ctx, d):
             await ha.call("media_player", "play_media", {"entity_id": mp, "media_content_id": value,
                                                           "media_content_type": act.get("content_type") or "music"})
         return value
+    if t == "play":
+        targets = act.get("targets") or []
+        cid = (act.get("channel_id") or "").strip() or ctx.get("channel_id") or ""
+        if not cid and ctx.get("number"):          # tidspåminnelse: slå upp kanalen via kanalnumret
+            _, cmap = await asyncio.to_thread(_ctx_data)
+            cid = next((k for k, v in cmap.items() if str(v) == str(ctx["number"])), "")
+        await _volume(act, targets)
+        return await do_play(targets, cid, act.get("fmt") or d.get("play_fmt") or "hls",
+                             act.get("content_type") or d.get("play_ctype") or "auto")
     if t == "service":
         domain, svc = act["service"].strip().split(".", 1)
         data = await tpl.render_json(json.loads(act.get("data") or "{}"), ctx, ha.get_state)
@@ -438,6 +451,34 @@ async def run_action(act, ctx, d):
             await ha.set_state(ent, v, {"friendly_name": ent, "source": "EPG reminders"})
         return f"{ent} = {v}"
     raise RuntimeError(f"Unknown action {t}")
+
+
+async def do_play(entities, cid, fmt, ctype):
+    """Spelar en kanal på mediaspelare. Kastar vid fel. Returnerar kanalnamnet (aldrig adressen)."""
+    if not cid:
+        raise RuntimeError("No channel to play")
+    if not entities:
+        raise RuntimeError("No media player chosen")
+    fmt = "ts" if fmt == "ts" else "hls"
+    url, name = await asyncio.to_thread(stream.resolve, cid, fmt, state.CFG)
+    if not url:
+        raise RuntimeError(f"No stream for this channel ({name or cid}) – requires an Xtream or M3U source")
+    for mp in entities:
+        await ha.call("media_player", "play_media", {
+            "entity_id": mp, "media_content_id": url,
+            "media_content_type": stream.content_type(mp, fmt, ctype), "extra": {"stream_type": "LIVE"}})
+    return name
+
+
+async def do_play_logged(entities, cid, fmt, ctype):
+    err = ""
+    name = cid
+    try:
+        name = await do_play(entities, cid, fmt, ctype)
+    except Exception as e:
+        err = scrub(e)
+    await hist(f"{T('a_play')}: {name}", "play", entities, not err, err)
+    return err
 
 
 async def run_action_logged(act, ctx, rem, d, quiet, home_ok):
@@ -579,6 +620,8 @@ def _add_snooze(rem_id, payload, minutes):
 
 
 async def handle_action_event(ev):
+    if ev.get("event_type") == "iptv_epg_play":
+        return await handle_play_event(ev)
     data = ev.get("data") or {}
     action = data.get("action") or data.get("actionName") or ""
     if not str(action).startswith("EPG|"):
@@ -601,7 +644,25 @@ async def handle_action_event(ev):
         entity = payload.get("entity") or d.get("tune_entity")
         if entity and ctx.get("number"):
             await do_tune(entity, ctx["number"], ctx.get("channel", ""), ctx.get("title", ""), rem["id"], d)
+    elif kind == "play":
+        d, _ = await asyncio.to_thread(_ctx_data)
+        cid = (payload.get("ctx") or {}).get("channel_id")
+        if cid and d.get("play_entities"):
+            await do_play_logged(d["play_entities"], cid, d.get("play_fmt"), d.get("play_ctype"))
     asyncio.create_task(publish_sensors())
+
+
+async def handle_play_event(ev):
+    """Event iptv_epg_play från t.ex. dashboardkort: {channel_id|number, entity_id|entity_ids, fmt}."""
+    data = ev.get("data") or {}
+    d, cmap = await asyncio.to_thread(_ctx_data)
+    cid = str(data.get("channel_id") or "")
+    if not cid and data.get("number"):
+        cid = next((k for k, v in cmap.items() if str(v) == str(data["number"])), "")
+    ents = data.get("entity_ids") or data.get("entity_id") or d.get("play_entities") or []
+    if isinstance(ents, str):
+        ents = [ents]
+    await do_play_logged([str(x) for x in ents], cid, data.get("fmt") or d.get("play_fmt"), data.get("content_type") or d.get("play_ctype"))
 
 
 # ------------------------------------------------------------------ sensorer
@@ -664,7 +725,7 @@ def _now_on_channels(now, limit=12):
                             (cid, now, now)).fetchone()
             nxt = c.execute("select title,start from programs where channel_id=? and start>? order by start limit 1",
                             (cid, now)).fetchone()
-            out.append({"channel": ch["name"] or cid, "number": cmap.get(cid),
+            out.append({"id": cid, "channel": ch["name"] or cid, "number": cmap.get(cid),
                         "title": cur["title"] if cur else None, "start": cur["start"] if cur else None,
                         "stop": cur["stop"] if cur else None,
                         "next_title": nxt["title"] if nxt else None, "next_start": nxt["start"] if nxt else None})

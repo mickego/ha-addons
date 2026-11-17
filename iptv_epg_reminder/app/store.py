@@ -8,7 +8,7 @@ DB_PATH = os.environ.get("EPG_DB", "/data/epg.db")
 
 SCHEMA = """
 create table if not exists channels(
-  id text primary key, name text, icon text, cat text, src text, stream_id text);
+  id text primary key, name text, icon text, cat text, src text, stream_id text, url text);
 create table if not exists programs(
   channel_id text, start integer, stop integer, title text, descr text, category text,
   primary key(channel_id, start));
@@ -64,6 +64,8 @@ def init():
                      ("actions", "text"), ("opts", "text")):
         if col not in have:
             c.execute(f"alter table reminders add column {col} {ddl}")
+    if "url" not in {r[1] for r in c.execute("pragma table_info(channels)")}:
+        c.execute("alter table channels add column url text")
     # Migrering: gamla "fired"-nycklar (före steg-modellen) får steg-suffix så inget skickas om
     legacy = c.execute("select reminder_id,key,ts from fired where key not like '%|%'").fetchall()
     for r in legacy:
@@ -80,6 +82,7 @@ DEFAULTS = {
     "tune_entity": "", "tune_delay": 0.4, "tune_suffix": "", "tune_pre_entity": "", "tune_pre_wait": 8,
     "quiet_enabled": False, "quiet_from": "22:00", "quiet_to": "07:00",
     "home_entities": [], "tts_entity": "", "tts_language": "", "snooze_min": 10,
+    "play_entities": [], "play_fmt": "hls", "play_ctype": "auto",
 }
 
 

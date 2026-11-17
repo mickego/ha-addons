@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.0
+- Play TV: new reminder action **Play channel** sends the live stream to any media player (Chromecast / Google TV, VLC, Kodi …) via `media_player.play_media`
+- ▶ Play buttons in search results, channel lists and the guide: play on a device or **watch in the panel** (HLS player with built-in stream proxy – your login never reaches the browser)
+- Playback defaults under Settings (default players, HLS/TS, content type); VLC is detected automatically
+- Optional ▶ Play button in the push notification and in the `epg-now-card` dashboard card (event `iptv_epg_play`)
+- The stream address is built on demand from your Xtream/M3U source and is never stored in reminders, history, events or sensors
+- Bundles hls.js (Apache-2.0) for the in-panel player
+
 ## 2.1.0
 - New interface languages: German, French, Norwegian (Bokmål) and Finnish (SV/EN/DE/FR/NO/FI switch). The built-in Help tab is shown in English for the new languages.
 - Add-on configuration translated to German, French, Norwegian and Finnish

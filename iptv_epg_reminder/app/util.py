@@ -83,4 +83,5 @@ def scrub(x) -> str:
     """Maskar lösenord/användarnamn i URL:er i felmeddelanden."""
     t = str(x)
     t = re.sub(r"(password|username)=[^&'\s)]*", r"\1=***", t, flags=re.I)
+    t = re.sub(r"(/(?:live|movie|series)/)[^/\s]+/[^/\s]+/", r"\1***/***/", t)
     return t

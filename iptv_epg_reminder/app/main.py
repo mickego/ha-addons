@@ -15,6 +15,7 @@ import epg
 import ha
 import state
 import store
+import stream
 from i18n import tr, LANGS
 from util import compile_query, scrub
 
@@ -70,7 +71,8 @@ def search_sync(p: dict):
             lo, hi = time_range(p.get("when", "today"), now)
             chq = compile_query(p.get("channel", ""))
             in_descr = p.get("descr") in ("1", "true", True)
-            sql = ("select p.channel_id,p.start,p.stop,p.title,p.descr,p.category,c.name cname,c.icon "
+            sql = ("select p.channel_id,p.start,p.stop,p.title,p.descr,p.category,c.name cname,c.icon,"
+                   "(c.stream_id is not null and c.stream_id!='') playable "
                    "from programs p left join channels c on c.id=p.channel_id where p.stop>? and p.start<?")
             args = [lo, hi]
             if cat:
@@ -93,7 +95,7 @@ def search_sync(p: dict):
                 d["has_reminder"] = (r["channel_id"], r["start"]) in have
                 out.append(d)
         elif kind == "live_chan":
-            sql = "select id,name,icon,cat from channels"
+            sql = "select id,name,icon,cat,(stream_id is not null and stream_id!='') playable from channels"
             args, where = [], []
             if cat:
                 where.append("cat=?")
@@ -162,7 +164,7 @@ def grid_sync(p: dict):
         favs = {r[0] for r in c.execute("select channel_id from favorites")}
         have = {(r["channel_id"], r["start"]) for r in c.execute(
             "select channel_id,start from reminders where kind='program' and enabled=1")}
-        sql = ("select p.channel_id,p.start,p.stop,p.title,p.descr,p.category,c.name cname,c.icon from programs p "
+        sql = ("select p.channel_id,p.start,p.stop,p.title,p.descr,p.category,c.name cname,c.icon,c.stream_id sid from programs p "
                "left join channels c on c.id=p.channel_id where p.stop>? and p.start<?")
         args = [frm, to]
         if cat:
@@ -179,7 +181,7 @@ def grid_sync(p: dict):
             ch = chans.get(r["channel_id"])
             if ch is None:
                 ch = chans[r["channel_id"]] = {"id": r["channel_id"], "name": name, "icon": r["icon"],
-                                               "number": cmap.get(r["channel_id"]), "fav": r["channel_id"] in favs,
+                                               "number": cmap.get(r["channel_id"]), "fav": r["channel_id"] in favs, "playable": bool(r["sid"]),
                                                "programs": []}
             ch["programs"].append({"start": r["start"], "stop": r["stop"], "title": r["title"],
                                    "descr": (r["descr"] or "")[:400], "category": r["category"],
@@ -216,6 +218,12 @@ def clean_actions(lst):
                 return None, ERR("err_pick_player")
             out.append({"type": t, "when": when, "source": "url" if a.get("source") == "url" else "file", "value": value,
                         "targets": targets, "volume": vol, "content_type": (a.get("content_type") or "music").strip()})
+        elif t == "play":
+            if not targets:
+                return None, ERR("err_pick_player")
+            fmt = "ts" if a.get("fmt") == "ts" else "hls"
+            out.append({"type": t, "when": when, "channel_id": (a.get("channel_id") or "").strip(), "fmt": fmt,
+                        "targets": targets, "volume": vol, "content_type": (a.get("content_type") or "auto").strip()})
         elif t == "service":
             svc = (a.get("service") or "").strip()
             if not ENT_RX.match(svc):
@@ -387,6 +395,10 @@ def J(data, status=200):
 
 def JE(pair):
     return web.json_response(pair[0], status=pair[1])
+
+
+async def hls_js(request):
+    return web.FileResponse(os.path.join(WEB_DIR, "hls.min.js"), headers={"Content-Type": "text/javascript; charset=utf-8"})
 
 
 async def cards_js(request):
@@ -764,6 +776,17 @@ async def api_channelmap_del(request):
     return J({"ok": True})
 
 
+async def api_play(request):
+    b = await request.json()
+    d = await asyncio.to_thread(engine.load_defaults_sync)
+    ents = [str(x) for x in (b.get("targets") or d.get("play_entities") or [])]
+    if not ents:
+        return J({"ok": False, "errors": ["err_pick_player"]})
+    err = await engine.do_play_logged(ents, str(b.get("channel_id") or ""), b.get("fmt") or d.get("play_fmt"),
+                                      b.get("content_type") or d.get("play_ctype"))
+    return J({"ok": not err, "errors": [err] if err else []})
+
+
 async def api_tune_now(request):
     b = await request.json()
     d = await asyncio.to_thread(engine.load_defaults_sync)
@@ -818,6 +841,10 @@ def make_app():
     app.add_routes([
         web.get("/", index),
         web.get("/epg-cards.js", cards_js),
+        web.get("/stream/seg", stream.segment),
+        web.get("/stream/{cid}.m3u8", stream.playlist),
+        web.post("/api/play", api_play),
+        web.get("/hls.min.js", hls_js),
         web.get("/api/status", api_status),
         web.get("/api/categories", api_categories),
         web.get("/api/search", api_search),

@@ -214,7 +214,7 @@ async def refresh_catalog(cfg: dict) -> dict:
                         cid = _s(it.get("epg_channel_id")).strip() or f"x{sid}"
                         rows.append((cid, _s(it.get("name")).strip(), _s(it.get("stream_icon")) or None,
                                      _s(it.get("category_id")), "x", sid))
-                    c.executemany("insert or replace into channels values(?,?,?,?,?,?)", rows)
+                    c.executemany("insert or replace into channels(id,name,icon,cat,src,stream_id) values(?,?,?,?,?,?)", rows)
                 else:
                     c.execute("delete from catalog where kind=?", (kind,))
                     rows = []
@@ -266,9 +266,9 @@ async def _refresh_m3u(cfg: dict) -> dict:
                     grp = attrs.get("group-title", "")
                     cid = cats.setdefault(grp, str(len(cats) + 1))
                     rows.append((attrs.get("tvg-id") or f"x{n}", attrs.get("tvg-name") or attrs["_name"],
-                                 attrs.get("tvg-logo") or None, cid, "x", str(n)))
+                                 attrs.get("tvg-logo") or None, cid, "x", str(n), line))
                     attrs = None
-            c.executemany("insert or replace into channels values(?,?,?,?,?,?)", rows)
+            c.executemany("insert or replace into channels(id,name,icon,cat,src,stream_id,url) values(?,?,?,?,?,?,?)", rows)
             c.executemany("insert into categories values('live',?,?)", [(v, k) for k, v in cats.items()])
             store.set_setting(c, "catalog_updated", int(time.time()))
             c.commit()

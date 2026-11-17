@@ -5,22 +5,22 @@
  *  add /local/epg-cards.js as "JavaScript module".  Add cards in the card picker (search "EPG").
  */
 const T = {
-  sv: { next: "Nästa påminnelse", none: "Inga kommande påminnelser", upcoming: "Kommande påminnelser", now: "Just nu", next_l: "Sen",
+  sv: { play: "▶ Spela", played: "✓", next: "Nästa påminnelse", none: "Inga kommande påminnelser", upcoming: "Kommande påminnelser", now: "Just nu", next_l: "Sen",
         last: "Senast utlöst", lastch: "Senaste kanalbyte", active: "Aktiva påminnelser", sched: "Schemalagda (7 d)", on: "Nu", ch: "kanal",
         tune: "Byt kanal", nofav: "Inga favoriter/kanalnummer sparade i add-onen", min: "min", soon: "nu", never: "Inget ännu", tv: "TV-box saknas i add-onens inställningar", sent: "Kanalbyte skickat" },
-  en: { next: "Next reminder", none: "No upcoming reminders", upcoming: "Upcoming reminders", now: "On now", next_l: "Next",
+  en: { play: "▶ Play", played: "✓", next: "Next reminder", none: "No upcoming reminders", upcoming: "Upcoming reminders", now: "On now", next_l: "Next",
         last: "Last triggered", lastch: "Last channel change", active: "Active reminders", sched: "Scheduled (7 d)", on: "Now", ch: "channel",
         tune: "Change channel", nofav: "No favorites/channel numbers saved in the add-on", min: "min", soon: "now", never: "Nothing yet", tv: "No TV box set in the add-on settings", sent: "Channel change sent" },
-  de: { next: "Nächste Erinnerung", none: "Keine anstehenden Erinnerungen", upcoming: "Anstehende Erinnerungen", now: "Läuft jetzt", next_l: "Danach",
+  de: { play: "▶ Abspielen", played: "✓", next: "Nächste Erinnerung", none: "Keine anstehenden Erinnerungen", upcoming: "Anstehende Erinnerungen", now: "Läuft jetzt", next_l: "Danach",
         last: "Zuletzt ausgelöst", lastch: "Letzter Senderwechsel", active: "Aktive Erinnerungen", sched: "Geplant (7 T)", on: "Jetzt", ch: "Sender",
         tune: "Sender wechseln", nofav: "Keine Favoriten/Sendernummern im Add-on gespeichert", min: "Min", soon: "jetzt", never: "Noch nichts", tv: "Keine TV-Box in den Add-on-Einstellungen", sent: "Senderwechsel gesendet" },
-  fr: { next: "Prochain rappel", none: "Aucun rappel à venir", upcoming: "Rappels à venir", now: "En cours", next_l: "Ensuite",
+  fr: { play: "▶ Lire", played: "✓", next: "Prochain rappel", none: "Aucun rappel à venir", upcoming: "Rappels à venir", now: "En cours", next_l: "Ensuite",
         last: "Dernier déclenché", lastch: "Dernier changement de chaîne", active: "Rappels actifs", sched: "Planifiés (7 j)", on: "Maintenant", ch: "chaîne",
         tune: "Changer de chaîne", nofav: "Aucun favori/numéro de chaîne enregistré dans l'add-on", min: "min", soon: "maintenant", never: "Rien pour l'instant", tv: "Aucune box TV dans les paramètres de l'add-on", sent: "Changement de chaîne envoyé" },
-  nb: { next: "Neste påminnelse", none: "Ingen kommende påminnelser", upcoming: "Kommende påminnelser", now: "På nå", next_l: "Deretter",
+  nb: { play: "▶ Spill av", played: "✓", next: "Neste påminnelse", none: "Ingen kommende påminnelser", upcoming: "Kommende påminnelser", now: "På nå", next_l: "Deretter",
         last: "Sist utløst", lastch: "Siste kanalbytte", active: "Aktive påminnelser", sched: "Planlagt (7 d)", on: "Nå", ch: "kanal",
         tune: "Bytt kanal", nofav: "Ingen favoritter/kanalnumre lagret i tillegget", min: "min", soon: "nå", never: "Ingenting ennå", tv: "Ingen TV-boks i tilleggets innstillinger", sent: "Kanalbytte sendt" },
-  fi: { next: "Seuraava muistutus", none: "Ei tulevia muistutuksia", upcoming: "Tulevat muistutukset", now: "Menossa nyt", next_l: "Sen jälkeen",
+  fi: { play: "▶ Toista", played: "✓", next: "Seuraava muistutus", none: "Ei tulevia muistutuksia", upcoming: "Tulevat muistutukset", now: "Menossa nyt", next_l: "Sen jälkeen",
         last: "Viimeksi laukaistu", lastch: "Viimeisin kanavanvaihto", active: "Aktiiviset muistutukset", sched: "Ajastetut (7 pv)", on: "Nyt", ch: "kanava",
         tune: "Vaihda kanava", nofav: "Lisäosaan ei ole tallennettu suosikkeja/kanavanumeroita", min: "min", soon: "nyt", never: "Ei vielä mitään", tv: "Lisäosan asetuksissa ei ole TV-boksia", sent: "Kanavanvaihto lähetetty" },
 };
@@ -113,7 +113,7 @@ class EpgUpcomingCard extends EpgBase {
 
 /* ---- On now (mini guide + remote) ---- */
 class EpgNowCard extends EpgBase {
-  static getStubConfig() { return { tune: true, show_next: true }; }
+  static getStubConfig() { return { tune: true, play: false, show_next: true }; }
   getCardSize() { return 2 + ((this._cfg.max || 6)); }
   _render() {
     if (this._busy) return;
@@ -129,9 +129,19 @@ class EpgNowCard extends EpgBase {
         <div class="grow"><div class="t">${this._esc(c.title || "—")}</div>
         <div class="s">${this._esc(c.channel)}${c.stop ? " · " + this._time(c.start) + "–" + this._time(c.stop) : ""}${this._cfg.show_next !== false && c.next_title ? ` · ${t.next_l}: ${this._esc(c.next_title)} ${this._time(c.next_start)}` : ""}</div>
         <div class="bar"><i style="width:${pct}%"></i></div></div>
-        ${canTune && c.number ? `<button class="btn" data-i="${i}">${t.tune}</button>` : ""}</div>`;
+        ${canTune && c.number ? `<button class="btn" data-i="${i}">${t.tune}</button>` : ""}
+        ${this._cfg.play && c.id ? `<button class="btn" data-p="${i}">${t.play}</button>` : ""}</div>`;
     }).join("") + `<div class="toast" id="msg"></div>`);
     this.shadowRoot.querySelectorAll("button[data-i]").forEach((b) => (b.onclick = () => this._tune(ch[+b.dataset.i], cfg)));
+    this.shadowRoot.querySelectorAll("button[data-p]").forEach((b) => (b.onclick = () => this._play(ch[+b.dataset.p])));
+  }
+  async _play(c) {
+    const t = this._tx(), msg = this.shadowRoot.getElementById("msg");
+    const data = { channel_id: c.id };
+    if (this._cfg.play_entity) data.entity_id = this._cfg.play_entity;   // otherwise: the add-on's default players
+    if (this._cfg.play_format) data.fmt = this._cfg.play_format;
+    try { await this._hass.callApi("POST", "events/iptv_epg_play", data); msg.textContent = `${t.played} ${t.play}: ${c.channel}`; }
+    catch (e) { msg.textContent = String((e && e.message) || e); }
   }
   async _tune(c, cfg) {
     const t = this._tx(), a = (cfg && cfg.attributes) || {};

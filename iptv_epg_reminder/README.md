@@ -1,6 +1,6 @@
 # IPTV EPG Reminders · IPTV EPG Påminnelser
 
-**EN** – Search live programs, series and movies (wildcards), browse a TV-guide grid, and set reminders that use Home Assistant notifications. Reminders can also read text aloud (TTS), play sound from a file or URL, call any service, set entities and change channel on your TV box. Written messages can include variables and live entity values. Built-in help, interface in Swedish, English, German, French, Norwegian and Finnish.
+**EN** – Search live programs, series and movies (wildcards), browse a TV-guide grid, and set reminders that use Home Assistant notifications. Reminders can also read text aloud (TTS), play sound from a file or URL, call any service, set entities and change channel on your TV box. Written messages can include variables and live entity values. Built-in help, Swedish/English interface.
 
 **SV** – Sök live-program, serier och filmer (wildcards), bläddra i en tablå och sätt påminnelser via Home Assistants notiser. Påminnelser kan också läsa upp text (TTS), spela ljud från fil eller URL, anropa valfri tjänst, sätta entiteter och byta kanal på TV-boxen. Egna texter kan innehålla variabler och värden från entiteter. Inbyggd hjälp, svenskt/engelskt gränssnitt.
 

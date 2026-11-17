@@ -204,7 +204,7 @@ async def ws_listen(handler):
                     msg = await ws.receive_json()
                     if msg.get("type") != "auth_ok":
                         raise RuntimeError("websocket auth failed")
-                    for i, et in enumerate(("mobile_app_notification_action", "ios.notification_action_fired"), 1):
+                    for i, et in enumerate(("mobile_app_notification_action", "ios.notification_action_fired", "iptv_epg_play"), 1):
                         await ws.send_json({"id": i, "type": "subscribe_events", "event_type": et})
                     backoff = 5
                     async for m in ws:

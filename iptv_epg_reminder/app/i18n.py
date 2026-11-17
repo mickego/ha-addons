@@ -1,6 +1,7 @@
 """Serverns texter (notiser, historik, sensornamn) på svenska och engelska."""
 S = {
     "sv": {
+        "a_play": "Spela kanal", "play_btn": "▶ Spela",
         "sensor_now": "EPG just nu på favoriter",
         "status_future": "Börjar om {minutes} min på {channel} ({start})",
         "status_now": "Börjar nu på {channel} ({start})",
@@ -30,6 +31,7 @@ S = {
         "new_series_one": "📚 Ny serie: {name}", "new_series_many": "📚 {n} nya serier",
     },
     "en": {
+        "a_play": "Play channel", "play_btn": "▶ Play",
         "sensor_now": "EPG on now (favorites)",
         "status_future": "Starts in {minutes} min on {channel} ({start})",
         "status_now": "Starting now on {channel} ({start})",
@@ -60,6 +62,7 @@ S = {
     },
 
     "de": {
+        "a_play": "Sender abspielen", "play_btn": "▶ Abspielen",
         "sensor_now": "EPG läuft jetzt (Favoriten)",
         "status_future": "Beginnt in {minutes} Min auf {channel} ({start})",
         "status_now": "Beginnt jetzt auf {channel} ({start})",
@@ -89,6 +92,7 @@ S = {
         "new_series_one": "📚 Neue Serie: {name}", "new_series_many": "📚 {n} neue Serien",
     },
     "fr": {
+        "a_play": "Lire la chaîne", "play_btn": "▶ Lire",
         "sensor_now": "EPG en cours (favoris)",
         "status_future": "Commence dans {minutes} min sur {channel} ({start})",
         "status_now": "Commence maintenant sur {channel} ({start})",
@@ -118,6 +122,7 @@ S = {
         "new_series_one": "📚 Nouvelle série : {name}", "new_series_many": "📚 {n} nouvelles séries",
     },
     "nb": {
+        "a_play": "Spill kanal", "play_btn": "▶ Spill av",
         "sensor_now": "EPG på nå (favoritter)",
         "status_future": "Starter om {minutes} min på {channel} ({start})",
         "status_now": "Starter nå på {channel} ({start})",
@@ -147,6 +152,7 @@ S = {
         "new_series_one": "📚 Ny serie: {name}", "new_series_many": "📚 {n} nye serier",
     },
     "fi": {
+        "a_play": "Toista kanava", "play_btn": "▶ Toista",
         "sensor_now": "EPG menossa nyt (suosikit)",
         "status_future": "Alkaa {minutes} min kuluttua kanavalla {channel} ({start})",
         "status_now": "Alkaa nyt kanavalla {channel} ({start})",
