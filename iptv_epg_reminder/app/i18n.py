@@ -1,6 +1,7 @@
 """Serverns texter (notiser, historik, sensornamn) på svenska och engelska."""
 S = {
     "sv": {
+        "err_dashboard_only": "Spelaren visar bara dashboards (t.ex. Pixel Tablet/Nest Hub). Välj en TV, Chromecast, VLC eller Kodi – eller använd ”Titta här”.",
         "a_play": "Spela kanal", "play_btn": "▶ Spela",
         "sensor_now": "EPG just nu på favoriter",
         "status_future": "Börjar om {minutes} min på {channel} ({start})",
@@ -31,6 +32,7 @@ S = {
         "new_series_one": "📚 Ny serie: {name}", "new_series_many": "📚 {n} nya serier",
     },
     "en": {
+        "err_dashboard_only": "This player only shows dashboards (e.g. Pixel Tablet/Nest Hub). Pick a TV, Chromecast, VLC or Kodi – or use “Watch here”.",
         "a_play": "Play channel", "play_btn": "▶ Play",
         "sensor_now": "EPG on now (favorites)",
         "status_future": "Starts in {minutes} min on {channel} ({start})",
@@ -62,6 +64,7 @@ S = {
     },
 
     "de": {
+        "err_dashboard_only": "Dieser Player zeigt nur Dashboards (z. B. Pixel Tablet/Nest Hub). Wählen Sie TV, Chromecast, VLC oder Kodi – oder „Hier ansehen“.",
         "a_play": "Sender abspielen", "play_btn": "▶ Abspielen",
         "sensor_now": "EPG läuft jetzt (Favoriten)",
         "status_future": "Beginnt in {minutes} Min auf {channel} ({start})",
@@ -92,6 +95,7 @@ S = {
         "new_series_one": "📚 Neue Serie: {name}", "new_series_many": "📚 {n} neue Serien",
     },
     "fr": {
+        "err_dashboard_only": "Ce lecteur n'affiche que des tableaux de bord (p. ex. Pixel Tablet/Nest Hub). Choisissez une TV, Chromecast, VLC ou Kodi – ou « Regarder ici ».",
         "a_play": "Lire la chaîne", "play_btn": "▶ Lire",
         "sensor_now": "EPG en cours (favoris)",
         "status_future": "Commence dans {minutes} min sur {channel} ({start})",
@@ -122,6 +126,7 @@ S = {
         "new_series_one": "📚 Nouvelle série : {name}", "new_series_many": "📚 {n} nouvelles séries",
     },
     "nb": {
+        "err_dashboard_only": "Denne spilleren viser bare dashbord (f.eks. Pixel Tablet/Nest Hub). Velg TV, Chromecast, VLC eller Kodi – eller «Se her».",
         "a_play": "Spill kanal", "play_btn": "▶ Spill av",
         "sensor_now": "EPG på nå (favoritter)",
         "status_future": "Starter om {minutes} min på {channel} ({start})",
@@ -152,6 +157,7 @@ S = {
         "new_series_one": "📚 Ny serie: {name}", "new_series_many": "📚 {n} nye serier",
     },
     "fi": {
+        "err_dashboard_only": "Tämä soitin näyttää vain kojetauluja (esim. Pixel Tablet/Nest Hub). Valitse TV, Chromecast, VLC tai Kodi – tai ”Katso tässä”.",
         "a_play": "Toista kanava", "play_btn": "▶ Toista",
         "sensor_now": "EPG menossa nyt (suosikit)",
         "status_future": "Alkaa {minutes} min kuluttua kanavalla {channel} ({start})",

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.3.1
+- Playback: a failing media player no longer stops the others; players that only show dashboards (Pixel Tablet, Nest Hub …) now give a clear message
+
 ## 2.3.0
 - Movies and series can now be played too: ▶ Play on a media player or watch in the panel (series: pick season and episode)
 - Movie/episode proxy with seek support for the in-panel player (browsers cannot play .mkv – use a media player for those)

@@ -453,16 +453,29 @@ async def run_action(act, ctx, d):
     raise RuntimeError(f"Unknown action {t}")
 
 
+async def _play_each(entities, make):
+    """Spelar på alla valda spelare; ett fel stoppar inte de övriga. Kastar samlat fel om något misslyckades."""
+    errs = []
+    for mp in entities:
+        try:
+            await ha.call("media_player", "play_media", make(mp))
+        except Exception as ex:
+            msg = scrub(ex)
+            if "only accept the media content type dashboard" in msg:
+                msg = T("err_dashboard_only")
+            errs.append(f"{mp}: {msg}")
+    if errs:
+        raise RuntimeError("; ".join(errs))
+
+
 async def do_play_vod(entities, kind, vid, ext, ctype, label):
     if not entities:
         raise RuntimeError("No media player chosen")
     url, ext = await asyncio.to_thread(stream.resolve_vod, kind, vid, ext, state.CFG)
     if not url:
         raise RuntimeError("Movies/series require an Xtream source")
-    for mp in entities:
-        await ha.call("media_player", "play_media", {
-            "entity_id": mp, "media_content_id": url,
-            "media_content_type": stream.content_type_vod(mp, ext, ctype)})
+    await _play_each(entities, lambda mp: {
+        "entity_id": mp, "media_content_id": url, "media_content_type": stream.content_type_vod(mp, ext, ctype)})
     return label
 
 
@@ -476,10 +489,9 @@ async def do_play(entities, cid, fmt, ctype):
     url, name = await asyncio.to_thread(stream.resolve, cid, fmt, state.CFG)
     if not url:
         raise RuntimeError(f"No stream for this channel ({name or cid}) – requires an Xtream or M3U source")
-    for mp in entities:
-        await ha.call("media_player", "play_media", {
-            "entity_id": mp, "media_content_id": url,
-            "media_content_type": stream.content_type(mp, fmt, ctype), "extra": {"stream_type": "LIVE"}})
+    await _play_each(entities, lambda mp: {
+        "entity_id": mp, "media_content_id": url,
+        "media_content_type": stream.content_type(mp, fmt, ctype), "extra": {"stream_type": "LIVE"}})
     return name
 
 
