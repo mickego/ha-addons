@@ -1,0 +1,31 @@
+configuration:
+  epg_url:
+    name: EPG URL (XMLTV)
+    description: Address of your XMLTV/EPG source. Stored only here – never shown in the dashboard.
+  xtream_url:
+    name: Xtream URL (optional)
+    description: Optional Xtream Codes address used for series/movies/live catalog. Often the same login as the EPG URL.
+  playlist_url:
+    name: M3U playlist URL (optional)
+    description: Optional fallback for the channel list when no Xtream API is available.
+  refresh_hours:
+    name: Refresh interval (hours)
+    description: How often EPG and catalog are fetched.
+  epg_days:
+    name: EPG days to keep
+    description: Number of days ahead to store.
+  default_lead_minutes:
+    name: Default minutes before start
+    description: Initial value for new reminders.
+  tts_entity:
+    name: Default TTS engine
+    description: For example tts.home_assistant_cloud. Can also be set in the dashboard.
+  language:
+    name: Language
+    description: Initial interface language (can be switched in the dashboard).
+  tts_language:
+    name: Voice language
+    description: Language code for spoken text, e.g. en or sv. Empty = same as the interface.
+  user_agent:
+    name: User agent
+    description: Only change if your provider requires a specific one.

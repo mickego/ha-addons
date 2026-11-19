@@ -1,0 +1,31 @@
+configuration:
+  epg_url:
+    name: EPG-URL (XMLTV)
+    description: Adress till din XMLTV-/EPG-källa. Sparas bara här – visas aldrig i dashboarden.
+  xtream_url:
+    name: Xtream-URL (valfri)
+    description: Valfri Xtream Codes-adress för serier/filmer/live-katalog. Ofta samma inloggning som EPG-URL.
+  playlist_url:
+    name: M3U-spellista (valfri)
+    description: Valfri reserv för kanallistan när Xtream-API saknas.
+  refresh_hours:
+    name: Uppdateringsintervall (timmar)
+    description: Hur ofta EPG och katalog hämtas.
+  epg_days:
+    name: Antal EPG-dagar
+    description: Antal dagar framåt som sparas.
+  default_lead_minutes:
+    name: Standard minuter före start
+    description: Startvärde för nya påminnelser.
+  tts_entity:
+    name: Standard TTS-motor
+    description: T.ex. tts.home_assistant_cloud. Kan också sättas i dashboarden.
+  language:
+    name: Språk
+    description: Språk i gränssnittet vid första start (kan växlas i dashboarden).
+  tts_language:
+    name: Röstspråk
+    description: Språkkod för uppläst text, t.ex. sv eller en. Tomt = samma som gränssnittet.
+  user_agent:
+    name: User agent
+    description: Ändra bara om din leverantör kräver en särskild.

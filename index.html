@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EPG</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#0d1118;--panel:#151b25;--panel2:#1b2331;--line:#252e3d;--text:#e6ebf2;--mute:#8b97a9;
+  --accent:#4cc9f0;--accent2:#7b8cff;--amber:#ffb454;--ok:#3ddc97;--bad:#ff6b6b;
+  --radius:14px;--shadow:0 6px 24px rgba(0,0,0,.28);
+}
+@media (prefers-color-scheme:light){
+  :root{--bg:#f2f4f8;--panel:#ffffff;--panel2:#eef1f6;--line:#dde2ea;--text:#18202c;--mute:#667388;
+    --accent:#0a8fc2;--accent2:#4b5fe0;--amber:#c47a0a;--ok:#12935f;--bad:#d23c3c;--shadow:0 4px 18px rgba(20,30,50,.08)}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 20px;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:.2px}
+.logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:17px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.pill{padding:3px 10px;border-radius:99px;background:var(--panel);border:1px solid var(--line);color:var(--mute);font-size:12px;white-space:nowrap}
+.pill b{color:var(--text);font-weight:600}
+.pill.err{border-color:var(--bad);color:var(--bad)}
+.pill.ok b{color:var(--ok)}
+.tabs{display:flex;gap:4px;background:var(--panel);padding:3px;border-radius:11px;border:1px solid var(--line)}
+.tabs button,.seg button{border:0;background:transparent;padding:6px 14px;border-radius:8px;color:var(--mute);font-weight:600}
+.tabs button.on,.seg button.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.btn{border:1px solid var(--line);background:var(--panel2);padding:7px 14px;border-radius:10px;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:4px 10px;font-size:12px;border-radius:8px}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.btn.amber{border-color:color-mix(in srgb,var(--amber) 55%,var(--line));color:var(--amber)}
+.btn.done{border-color:var(--ok);color:var(--ok);cursor:default}
+main{max-width:1500px;margin:0 auto;padding:18px 20px 60px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:18px;align-items:start}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.panel h3{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.9px;color:var(--mute);display:flex;justify-content:space-between;align-items:center}
+.stack{display:flex;flex-direction:column;gap:18px}
+.seg{display:inline-flex;gap:4px;background:var(--bg);padding:3px;border-radius:11px;border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search-row{margin-top:12px;display:flex;gap:10px}
+input[type=text],input[type=number],select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:0;min-width:0}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.search-row input{flex:1;font-size:15px}
+.filters{margin-top:12px;gap:8px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:4px 12px;font-size:12.5px;color:var(--mute);font-weight:600}
+.chip.on{background:color-mix(in srgb,var(--accent) 16%,var(--bg));border-color:var(--accent);color:var(--accent)}
+.chip.kw{display:inline-flex;gap:6px;align-items:center}
+.chip.kw i{font-style:normal;opacity:.6;cursor:pointer}.chip.kw i:hover{opacity:1;color:var(--bad)}
+.lbl{color:var(--mute);font-size:12px;margin-right:2px}
+.hint{color:var(--mute);font-size:12px;margin-top:8px}
+code{background:var(--bg);border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-size:12px}
+.active{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-radius:12px;
+  background:color-mix(in srgb,var(--accent2) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent2) 35%,var(--line))}
+.active .tag{background:var(--panel2);border:1px solid var(--line);padding:2px 10px;border-radius:99px;font-size:12.5px}
+.active .tag b{color:var(--accent)}
+.active .sp{flex:1}
+.day{margin:18px 4px 8px;font-weight:700;color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.9px}
+.card{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;margin-bottom:8px;transition:border-color .15s,transform .15s}
+.card:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.ico{width:46px;height:46px;border-radius:10px;background:var(--panel2);display:grid;place-items:center;flex:none;overflow:hidden;font-size:20px;border:1px solid var(--line)}
+.ico img{width:100%;height:100%;object-fit:contain}
+.poster{width:56px;height:80px;border-radius:8px}
+.body{flex:1;min-width:0}
+.title{font-weight:700;font-size:15px;overflow-wrap:anywhere}
+.meta{color:var(--mute);font-size:12.5px;margin-top:2px}
+.meta .t{color:var(--text);font-weight:600}
+.desc{color:var(--mute);font-size:12.5px;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bar{height:4px;background:var(--panel2);border-radius:4px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.live{color:var(--ok);font-weight:700;font-size:11px;letter-spacing:.8px;margin-right:6px}
+.actions{display:flex;flex-direction:column;gap:6px;flex:none}
+.empty{padding:40px 10px;text-align:center;color:var(--mute)}
+.more{display:block;margin:14px auto}
+.sched{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.sched:first-of-type{border-top:0}
+.when{flex:none;width:74px;text-align:center}
+.when .big{font-weight:800;font-size:16px;color:var(--amber)}
+.when .rel{font-size:11px;color:var(--mute)}
+.when .d{font-size:11px;color:var(--mute)}
+.mini{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.mini span{font-size:11px;padding:1px 8px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);color:var(--mute)}
+.mini span.type{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.scroll{max-height:540px;overflow:auto;margin:0 -6px;padding:0 6px}
+.rule{padding:10px 0;border-top:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.rule:first-of-type{border-top:0}
+.sw{position:relative;width:36px;height:20px;flex:none;margin-top:2px}
+.sw input{display:none}.sw span{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--line);border-radius:20px;transition:.2s}
+.sw span:before{content:"";position:absolute;width:14px;height:14px;left:2px;top:2px;border-radius:50%;background:var(--mute);transition:.2s}
+.sw input:checked+span{background:color-mix(in srgb,var(--ok) 30%,var(--panel2));border-color:var(--ok)}
+.sw input:checked+span:before{transform:translateX(16px);background:var(--ok)}
+.badge{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--panel2);color:var(--accent2);margin-right:6px;text-transform:uppercase;letter-spacing:.5px}
+dialog{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:18px;padding:0;width:min(560px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(5,8,14,.65);backdrop-filter:blur(3px)}
+.m-head{padding:18px 22px 8px}.m-head h2{margin:0;font-size:18px}.m-head p{margin:4px 0 0;color:var(--mute)}
+.m-body{padding:8px 22px;display:flex;flex-direction:column;gap:14px;max-height:62vh;overflow:auto}
+.m-foot{padding:14px 22px 20px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.field label{display:block;font-size:12px;color:var(--mute);margin-bottom:5px;font-weight:600}
+.field input[type=text],.field input[type=number],.field select{width:100%}
+.devs{display:flex;flex-wrap:wrap;gap:8px}
+.dev{display:inline-flex;gap:7px;align-items:center;padding:6px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);cursor:pointer;user-select:none}
+.dev input{accent-color:var(--accent)}
+.dev:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg))}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 18px;border-radius:12px;box-shadow:var(--shadow);z-index:99;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+.toast.bad{border-color:var(--bad)}.toast.good{border-color:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:7px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.7px;border-top:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:900px){.two{grid-template-columns:1fr}}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+.pickres{position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-top:4px;box-shadow:var(--shadow);overflow:hidden}
+.pickres:empty{display:none}.pick{padding:8px 12px;cursor:pointer}.pick:hover{background:var(--bg)}
+.gtools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.gtools input[type=text]{width:190px}
+.gridwrap{overflow:auto;max-height:calc(100vh - 250px);min-height:320px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);box-shadow:var(--shadow)}
+.g{position:relative;min-width:max-content}
+.ghead{position:sticky;top:0;z-index:6;display:flex;background:var(--panel2);border-bottom:1px solid var(--line);height:38px}
+.gcorner{position:sticky;left:0;z-index:7;flex:none;width:168px;background:var(--panel2);border-right:1px solid var(--line);padding:10px 12px;font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.8px}
+.gtl{position:relative;flex:none}
+.gtick{position:absolute;top:0;bottom:0;padding:9px 6px;border-left:1px solid var(--line);font-size:12px;font-weight:700;color:var(--mute);white-space:nowrap}
+.gtick small{display:block;font-weight:600;font-size:10px;opacity:.8;margin-top:-2px}
+.grow{display:flex;height:60px;border-top:1px solid var(--line)}
+.gch{position:sticky;left:0;z-index:4;flex:none;width:168px;display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--panel);border-right:1px solid var(--line);cursor:pointer}
+.gch:hover{background:var(--panel2)}
+.gch .ico{width:34px;height:34px;font-size:15px;border-radius:8px}
+.gname{font-weight:700;font-size:12.5px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.gnum{display:inline-block;margin-top:2px;font-size:10.5px;font-weight:800;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg));padding:0 6px;border-radius:5px}
+.gline{position:relative;flex:none}
+.gp{position:absolute;top:5px;bottom:5px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:5px 8px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:center;min-width:6px}
+.gp:hover{border-color:var(--accent);z-index:2;background:color-mix(in srgb,var(--accent) 10%,var(--panel2))}
+.gp b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gp span{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gp.past{opacity:.5}.gp.now{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--panel2))}
+.gp.rem{box-shadow:inset 3px 0 0 var(--amber)}.gp.rem b:after{content:" 🔔"}
+.gp.hit{outline:2px solid var(--accent2);outline-offset:-2px;background:color-mix(in srgb,var(--accent2) 22%,var(--panel2))}
+.gnow{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:5;pointer-events:none;box-shadow:0 0 8px var(--bad)}
+.gnow:before{content:"";position:absolute;top:36px;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--bad)}
+.lang{display:inline-flex}
+.lang button{padding:5px 11px}
+textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:0;min-width:0;width:100%;font:inherit;color:inherit;resize:vertical}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+input[type=time]{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;outline:0}
+dialog.wide{width:min(720px,96vw)}
+.sec{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:12px;background:color-mix(in srgb,var(--bg) 40%,var(--panel))}
+.sec-h{font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--accent2);display:flex;justify-content:space-between;align-items:center}
+.varbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px}
+.varbar select,.varbar input{padding:4px 8px;font-size:12px;border-radius:8px}
+.varbar .entq{width:170px}.varbar .attrq{width:110px}
+.acard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel);display:flex;flex-direction:column;gap:10px}
+.ahead{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ahead .sp{flex:1}
+.ahead select{padding:4px 8px;font-size:12px}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+.hsec{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.hsec>summary{cursor:pointer;padding:13px 16px;font-weight:700;font-size:15px;list-style:none;display:flex;gap:10px;align-items:center}
+.hsec>summary::-webkit-details-marker{display:none}
+.hsec>summary:before{content:"▸";color:var(--accent);transition:.15s}
+.hsec[open]>summary:before{transform:rotate(90deg)}
+.hbody{padding:0 18px 16px;line-height:1.6}
+.hbody h4{margin:16px 0 4px;font-size:13px;color:var(--accent2);text-transform:uppercase;letter-spacing:.7px}
+.hbody p{margin:6px 0}.hbody ul,.hbody ol{margin:6px 0;padding-left:22px}
+.hbody pre{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font-size:12.5px;line-height:1.5;margin:8px 0}
+.hbody table{margin:8px 0}.hbody td:first-child{white-space:nowrap}
+.hbody .tip{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel));padding:8px 12px;border-radius:0 10px 10px 0;margin:10px 0}
+.hbody .warn{border-left:3px solid var(--amber);background:color-mix(in srgb,var(--amber) 8%,var(--panel));padding:8px 12px;border-radius:0 10px 10px 0;margin:10px 0}
+.helpwrap{max-width:900px;margin:0 auto}
+.star{background:none;border:0;font-size:15px;padding:0 2px;opacity:.35;color:var(--amber)}
+.star.on{opacity:1}.star:hover{opacity:1}
+.gch .star{position:absolute;right:4px;top:3px;font-size:13px}
+.gch{position:sticky}
+.sched.snz{opacity:.85}
+.chk{display:flex;gap:8px;align-items:center}
+.sub{color:var(--mute);font-size:12px}
+.rowitem{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.field .varbar input[type=text],.field .varbar select{width:auto}
+.field .varbar .entq{width:170px}.field .varbar .attrq{width:110px}
+.field .varbar .varsel{max-width:210px}
+</style></head>
+<body>
+<header>
+  <div class="brand"><div class="logo">📺</div><span data-t="app_name"></span></div>
+  <div class="chips" id="status"></div>
+  <button class="btn" id="btnRefresh" data-title="refresh_tip">⟳ <span data-t="refresh"></span></button>
+  <div class="tabs">
+    <button data-view="main" class="on" data-t="tab_main"></button>
+    <button data-view="grid" data-t="tab_grid"></button>
+    <button data-view="settings" data-t="tab_settings"></button>
+    <button data-view="help" data-t="tab_help"></button>
+  </div>
+  <div class="seg lang" id="langSeg"><button data-l="sv">SV</button><button data-l="en">EN</button><button data-l="de">DE</button><button data-l="fr">FR</button><button data-l="nb">NO</button><button data-l="fi">FI</button></div>
+</header>
+
+<main id="view-main">
+  <div class="grid">
+    <section class="stack">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <div class="seg" id="kindSeg">
+            <button data-k="live" class="on">📡 <span data-t="k_live"></span></button>
+            <button data-k="series">📚 <span data-t="k_series"></span></button>
+            <button data-k="movie">🎬 <span data-t="k_movie"></span></button>
+          </div>
+          <div class="seg" id="subSeg">
+            <button data-s="prog" class="on" data-t="s_prog"></button>
+            <button data-s="chan" data-t="s_chan"></button>
+          </div>
+        </div>
+        <div class="search-row">
+          <input type="text" id="q" data-ph="q_ph" autocomplete="off">
+          <button class="btn primary" id="btnSearch" data-t="search"></button>
+        </div>
+        <div class="row filters" id="filters">
+          <span id="whenBox" class="row" style="gap:6px"><span class="lbl" data-t="when"></span>
+            <button class="chip" data-w="now" data-t="w_now"></button><button class="chip on" data-w="today" data-t="w_today"></button>
+            <button class="chip" data-w="tomorrow" data-t="w_tomorrow"></button><button class="chip" data-w="week" data-t="w_week"></button>
+            <button class="chip" data-w="all" data-t="w_all"></button></span>
+          <select id="cat"></select>
+          <input type="text" id="chan" data-ph="chan_ph" style="width:200px">
+          <label class="chip" id="descrBox" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="descr"> <span data-t="in_descr"></span></label>
+          <button class="chip" id="favChip">⭐ <span data-t="favs"></span></button>
+        </div>
+        <div class="row" style="margin-top:12px;gap:6px">
+          <span class="lbl" data-t="saved_kw"></span><span id="saved" class="row" style="gap:6px"></span>
+          <button class="chip" id="btnSave">＋ <span data-t="save_search"></span></button>
+        </div>
+        <div class="hint" id="searchHint"></div>
+      </div>
+
+      <div class="active" id="active"></div>
+      <div id="results"></div>
+    </section>
+
+    <aside class="stack">
+      <div class="panel">
+        <h3><span>🔔 <span data-t="scheduled"></span></span> <span class="row" style="gap:8px"><button class="btn small" id="btnTime">＋ <span data-t="time_rem"></span></button><span class="pill" id="schedCount">0</span></span></h3>
+        <div class="scroll" id="sched"></div>
+      </div>
+      <div class="panel">
+        <h3><span>🧭 <span data-t="rules_h"></span></span> <span class="pill" id="ruleCount">0</span></h3>
+        <div id="rules"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<main id="view-grid" class="hidden">
+  <div class="gtools">
+    <button class="btn small" id="gPrev">◀</button><button class="btn small" id="gNow" data-t="now"></button><button class="btn small" id="gNext">▶</button>
+    <span id="gDays" class="row" style="gap:5px"></span>
+    <select id="gZoom"><option value="2" data-t="h2"></option><option value="3" data-t="h3" selected></option><option value="6" data-t="h6"></option><option value="12" data-t="h12"></option></select>
+    <select id="gCat"></select>
+    <input type="text" id="gQ" data-ph="g_chan_ph">
+    <input type="text" id="gHl" data-ph="g_hl_ph">
+    <button class="chip" id="gFav">⭐ <span data-t="favs"></span></button>
+    <button class="btn small" id="gTimeBtn">⏰ <span data-t="time_rem"></span></button>
+  </div>
+  <div class="gridwrap" id="gridwrap"></div>
+  <div class="hint" style="margin-top:8px" data-t="g_hint"></div>
+</main>
+
+<main id="view-settings" class="hidden">
+  <div class="two">
+    <div class="stack">
+      <div class="panel"><h3 data-t="status"></h3><div id="statBox"></div></div>
+      <div class="panel"><h3 data-t="def_h"></h3>
+        <div class="stack" style="gap:14px">
+          <div class="field"><label data-t="lead_lbl"></label><input type="number" id="dLead" min="0" max="1440"></div>
+          <div class="field"><label data-t="ntype_lbl"></label><select id="dType"></select></div>
+          <div class="field"><label data-t="devices_lbl"></label><div class="devs" id="dDevs"></div></div>
+          <div class="field"><label data-t="snooze_def"></label><input type="number" id="dSnooze" min="1" max="240"></div>
+          <div class="row"><button class="btn primary" id="dSave" data-t="save_def"></button><button class="btn" id="dTest" data-t="send_test"></button></div>
+        </div>
+      </div>
+      <div class="panel"><h3><span>🔊 <span data-t="voice_h"></span></span></h3>
+        <div class="stack" style="gap:14px">
+          <div class="field"><label data-t="tts_engine"></label><select id="sTts"></select></div>
+          <div class="field"><label data-t="tts_lang"></label><input type="text" id="sTtsLang" placeholder="sv / en / sv-SE"></div>
+          <div class="hint" data-t="voice_hint"></div>
+          <div class="row"><button class="btn primary" id="vSave" data-t="save"></button></div>
+        </div>
+      </div>
+      <div class="panel"><h3><span>🌙 <span data-t="quiet_h"></span></span></h3>
+        <div class="stack" style="gap:14px">
+          <label class="chk"><input type="checkbox" id="qEn"> <span data-t="quiet_en"></span></label>
+          <div class="row"><div class="field"><label data-t="quiet_from"></label><input type="time" id="qFrom"></div>
+            <div class="field"><label data-t="quiet_to"></label><input type="time" id="qTo"></div></div>
+          <div class="hint" data-t="quiet_hint"></div>
+          <div class="field"><label data-t="home_lbl"></label><div class="devs" id="sHome"></div><div class="hint" data-t="home_hint"></div></div>
+          <div class="row"><button class="btn primary" id="qSave" data-t="save"></button></div>
+        </div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="panel"><h3><span>📺 <span data-t="tv_h"></span></span></h3>
+        <div class="stack" style="gap:14px">
+          <div class="field"><label data-t="tv_entity"></label><input type="text" id="tEnt" list="remListS" placeholder="remote.tv_box"><datalist id="remListS"></datalist></div>
+          <div class="row"><div class="field" style="flex:1"><label data-t="tv_delay"></label><input type="number" id="tDelay" step="0.1" min="0" max="3"></div>
+            <div class="field" style="flex:1"><label data-t="tv_suffix"></label><input type="text" id="tSuffix"></div></div>
+          <div class="row"><div class="field" style="flex:2"><label data-t="tv_pre_ent"></label><input type="text" id="tPre" class="ent-in" list="entdl" placeholder="switch.tv_plug / remote.tv_box"></div>
+            <div class="field" style="flex:1"><label data-t="tv_pre_wait"></label><input type="number" id="tPreWait" min="0" max="60"></div></div>
+          <div class="row"><button class="btn primary" id="tSave" data-t="save"></button>
+            <input type="text" id="tTestNum" data-ph="channel_ph" inputmode="numeric" style="width:100px"><button class="btn" id="tTest" data-t="tv_test"></button></div>
+          <div><div class="lbl" style="margin-bottom:6px" data-t="chmap_h"></div><div id="chmap"></div></div>
+        </div>
+      </div>
+      <div class="panel"><h3><span>▶️ <span data-t="play_h"></span></span></h3>
+        <div class="stack" style="gap:14px">
+          <div class="field"><label data-t="play_players"></label><div class="devs" id="sPlay"></div></div>
+          <div class="row"><div class="field" style="flex:1"><label data-t="play_fmt"></label><select id="sPlayFmt"><option value="hls" data-t="play_fmt_hls"></option><option value="ts" data-t="play_fmt_ts"></option></select></div>
+            <div class="field" style="flex:1"><label data-t="play_ct"></label><select id="sPlayCt"></select></div></div>
+          <div class="hint" data-t="play_hint"></div>
+          <div class="row"><button class="btn primary" id="pSave" data-t="save"></button></div>
+        </div>
+      </div>
+      <div class="panel"><h3 data-t="hist_h"></h3><div id="hist"></div></div>
+      <div class="panel"><h3 data-t="ha_h"></h3><div id="haInfo"></div></div>
+    </div>
+  </div>
+</main>
+
+<main id="view-help" class="hidden"><div class="helpwrap" id="helpBox"></div></main>
+
+<dialog id="player" class="wide"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px"><b id="pTitle" style="flex:1"></b><button class="btn small" id="pVlc" type="button" data-t="vlc_btn"></button><button class="btn small" id="pClose" type="button">✕</button></div>
+  <video id="pVideo" controls autoplay playsinline style="width:100%;max-height:70vh;background:#000"></video><div id="pErr" class="hint" style="padding:8px 16px;color:var(--bad,#c0392b)"></div></dialog>
+<dialog id="sheet">
+  <div class="m-head"><h2 id="shTitle"></h2><p id="shSub"></p></div>
+  <div class="m-body" id="shBody"></div>
+  <div class="m-foot"><button class="btn" id="shClose" data-t="close"></button></div>
+</dialog>
+<dialog id="modal" class="wide">
+  <div class="m-head"><h2 id="mTitle"></h2><p id="mSub"></p></div>
+  <div class="m-body" id="mBody"></div>
+  <div class="m-foot">
+    <button class="btn" id="mTest" data-t="send_test"></button>
+    <button class="btn" id="mCancel" data-t="cancel"></button>
+    <button class="btn primary" id="mSave" data-t="save_rem"></button>
+  </div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- språk / language: [svenska, english] ---------- */
+const L={
+app_name:["EPG Påminnelser","EPG Reminders"],
+refresh:["Uppdatera","Refresh"],refresh_tip:["Hämta ny EPG/katalog nu","Fetch new EPG/catalog now"],
+tab_main:["Översikt","Overview"],tab_grid:["Tablå","Guide"],tab_settings:["Inställningar","Settings"],tab_help:["Hjälp","Help"],
+k_live:["Live","Live"],k_series:["Serier","Series"],k_movie:["Filmer","Movies"],s_prog:["Program","Programs"],s_chan:["Kanaler","Channels"],
+search:["Sök","Search"],
+q_ph:["Sökord, t.ex.  fotboll, mål*, -damer   (* och ? är wildcards)","Keywords, e.g.  football, goal*, -women   (* and ? are wildcards)"],
+when:["Tid","When"],w_now:["Nu","Now"],w_today:["Idag","Today"],w_tomorrow:["Imorgon","Tomorrow"],w_week:["7 dagar","7 days"],w_all:["Alla","All"],
+chan_ph:["Kanal (wildcard), t.ex. SVT*","Channel (wildcard), e.g. BBC*"],in_descr:["Sök i beskrivning","Search description"],favs:["Favoriter","Favorites"],
+saved_kw:["Egna sökord","Saved searches"],save_search:["Spara sökning","Save search"],none_saved:["– inga sparade ännu","– none saved yet"],
+search_hint:["Flera sökord: separera med komma. Uteslut med <code>-ord</code>. <code>*</code> = valfri text, <code>?</code> = ett tecken. Med wildcard måste hela titeln matcha: <code>Rapport*</code> = börjar med, <code>*final*</code> = innehåller.","Several keywords: separate with commas. Exclude with <code>-word</code>. <code>*</code> = any text, <code>?</code> = one character. With a wildcard the whole title must match: <code>News*</code> = starts with, <code>*final*</code> = contains."],
+scheduled:["Schemalagt","Scheduled"],time_rem:["Tidspåminnelse","Time reminder"],rules_h:["Regler & tider","Rules & times"],
+now:["Nu","Now"],h2:["2 timmar","2 hours"],h3:["3 timmar","3 hours"],h6:["6 timmar","6 hours"],h12:["12 timmar","12 hours"],
+g_chan_ph:["Kanal (wildcard) t.ex. SVT*","Channel (wildcard) e.g. BBC*"],g_hl_ph:["Markera program t.ex. fotboll*","Highlight programs e.g. football*"],
+g_hint:["Klicka på ett program för notis och/eller kanalbyte. Klicka på en kanal för att byta kanal nu eller tidsstyra. ⭐ = favorit. Rött streck = nu, 🔔 = påminnelse satt.","Click a program for a reminder and/or channel change. Click a channel to change channel now or schedule it. ⭐ = favorite. Red line = now, 🔔 = reminder set."],
+status:["Status","Status"],def_h:["Standard för nya påminnelser","Defaults for new reminders"],lead_lbl:["Påminn minuter före start","Remind minutes before start"],
+ntype_lbl:["Notistyp","Notification type"],devices_lbl:["Enheter","Devices"],snooze_def:["Standard för Snooze (minuter)","Default snooze (minutes)"],
+save_def:["Spara standard","Save defaults"],send_test:["Skicka test","Send test"],save:["Spara","Save"],
+voice_h:["Röst (TTS)","Voice (TTS)"],tts_engine:["Standard TTS-motor","Default TTS engine"],tts_lang:["Språkkod för röst (tomt = samma som gränssnittet)","Voice language code (empty = same as the UI)"],
+voice_hint:["Exempel på motorer: tts.home_assistant_cloud (Nabu Casa), tts.google_translate_en_com. Röst spelas på de mediaspelare du väljer per åtgärd.","Example engines: tts.home_assistant_cloud (Nabu Casa), tts.google_translate_en_com. Speech is played on the media players you pick per action."],
+quiet_h:["Tysta timmar & hemma-villkor","Quiet hours & home condition"],quiet_en:["Aktivera tysta timmar (ingen röst/ljud)","Enable quiet hours (no voice/sound)"],
+quiet_from:["Från","From"],quiet_to:["Till","To"],
+quiet_hint:["Gäller åtgärderna Röst och Ljud. Notiser skickas som vanligt. Kan överstyras per påminnelse.","Applies to the Voice and Sound actions. Notifications are sent as usual. Can be overridden per reminder."],
+home_lbl:["Personer som räknas som ”hemma”","People who count as “home”"],home_hint:["Används av ”Bara om någon är hemma” på en påminnelse. Inga valda = alltid.","Used by “Only if someone is home” on a reminder. None selected = always."],
+tv_h:["TV-box – automatiskt kanalbyte","TV box – automatic channel change"],tv_entity:["Standard-TV-box (remote-entitet)","Default TV box (remote entity)"],
+tv_delay:["Fördröjning mellan siffror (sek)","Delay between digits (sec)"],tv_suffix:["Kommando efter siffrorna (valfritt, t.ex. OK)","Command after the digits (optional, e.g. OK)"],
+tv_pre_ent:["Slå på TV först – entitet (valfritt)","Turn TV on first – entity (optional)"],tv_pre_wait:["Vänta (sek)","Wait (sec)"],tv_test:["Testa kanalbyte","Test channel change"],
+chmap_h:["Sparade kanalnummer","Saved channel numbers"],chmap_none:["Inga ännu – kryssa i ”Kom ihåg kanalnumret” när du skapar en påminnelse.","None yet – tick “Remember the channel number” when creating a reminder."],
+hist_h:["Senaste händelser","Recent events"],ha_h:["Home Assistant: entiteter & events","Home Assistant: entities & events"],
+channel_ph:["Kanal","Channel"],close:["Stäng","Close"],cancel:["Avbryt","Cancel"],save_rem:["Spara påminnelse","Save reminder"],saved_ok:["Sparat","Saved"],
+/* status-chips */
+st_channels:["Kanaler","Channels"],st_programs:["Program","Programs"],st_series:["Serier","Series"],st_movies:["Filmer","Movies"],st_epg:["EPG uppdaterad","EPG updated"],
+st_updating:["Uppdaterar…","Updating…"],st_errors:["fel","errors"],st_never:["aldrig","never"],
+st_noconf:["Ingen EPG-URL konfigurerad – ange den under addonens Konfiguration","No EPG URL configured – enter it in the add-on Configuration"],
+st_source:["Källa","Source"],st_xtream:["Xtream-API","Xtream API"],st_xtream_yes:["Ja (live, serier, filmer)","Yes (live, series, movies)"],st_xtream_no:["Nej (endast EPG/M3U)","No (EPG/M3U only)"],
+st_cp:["Kanaler / Program","Channels / Programs"],st_sm:["Serier / Filmer","Series / Movies"],st_catupd:["Katalog uppdaterad","Catalog updated"],st_tz:["Tidszon","Time zone"],st_ver:["Version","Version"],st_err:["Fel","Errors"],
+/* sök */
+kn_live_prog:["Live › Program","Live › Programs"],kn_live_chan:["Live › Kanaler","Live › Channels"],kn_series:["Serier","Series"],kn_movie:["Filmer","Movies"],
+all_cats:["Alla kategorier","All categories"],active_filter:["Aktivt filter","Active filter"],f_search:["Sök","Search"],f_when:["Tid","When"],f_chan:["Kanal","Channel"],f_descr:["inkl. beskrivning","incl. description"],f_cat:["Kategori","Category"],
+w_now_long:["Pågår nu","On now"],hits:["träffar","hits"],watch_search:["Bevaka sökningen","Watch this search"],clear:["Rensa","Clear"],
+no_hits:["Inga träffar.","No results."],no_epg:[" EPG-data har inte hämtats ännu."," EPG data has not been fetched yet."],err:["Fel","Error"],
+no_title:["(utan titel)","(untitled)"],on_air:["● PÅGÅR","● ON AIR"],r_set:["✓ Påminnelse","✓ Reminder"],r_add:["Påminn","Remind"],watch_title:["Bevaka titel","Watch title"],watch_title_tip:["Bevaka alla program med denna titel","Watch all programs with this title"],
+no_epg_now:["Ingen EPG just nu","No EPG right now"],now_tag:["● NU","● NOW"],watch_chan:["Bevaka kanal","Watch channel"],watch_new:["Bevaka nya","Watch new"],watch_new_tip:["Notis när en ny titel med detta namn dyker upp","Alert when a new title with this name appears"],
+added:["tillagd","added"],show_more:["Visa fler","Show more"],left:["kvar","left"],
+write_kw_first:["Skriv ett sökord först","Type a keyword first"],kw_saved:["Sökord sparat","Search saved"],remove:["Ta bort","Remove"],
+/* relativ tid */
+today:["Idag","Today"],tomorrow:["Imorgon","Tomorrow"],yesterday:["Igår","Yesterday"],rel_now:["nu","now"],rel_in:["om ","in "],rel_ago:[" sedan"," ago"],
+d_short:["d","d"],h_short:["h","h"],min_short:["min","min"],
+/* notistyper */
+nt_push:["Push till mobilapp","Push to mobile app"],nt_plain:["Enkel notis (TV/andra)","Simple notification (TV/other)"],nt_persistent:["Persistent notis i HA","Persistent notification in HA"],
+nt_tts:["Röstmeddelande (TTS)","Voice message (TTS)"],nt_none:["Ingen notis (bara kanalbyte/åtgärder)","No notification (channel change/actions only)"],
+nts_push:["Push","Push"],nts_plain:["Enkel","Simple"],nts_persistent:["Persistent","Persistent"],nts_tts:["Röst","Voice"],nts_none:["Ingen notis","No notification"],
+wd0:["Mån","Mon"],wd1:["Tis","Tue"],wd2:["Ons","Wed"],wd3:["Tors","Thu"],wd4:["Fre","Fri"],wd5:["Lör","Sat"],wd6:["Sön","Sun"],
+rep_once:["Engång","Once"],rep_daily:["Varje dag","Every day"],rep_weekdays:["Mån–fre","Mon–Fri"],rep_custom:["Valda dagar","Selected days"],
+rep_txt_once:["Engång {date} {time}","Once {date} {time}"],rep_txt_daily:["Varje dag {time}","Every day {time}"],rep_txt_weekdays:["Mån–fre {time}","Mon–Fri {time}"],rep_txt_custom:["{days} {time}","{days} {time}"],
+/* schema & regler */
+no_sched:["Inga schemalagda notiser.<br>Sök fram ett program och tryck <b>🔔 Påminn</b>.","No scheduled notifications.<br>Find a program and press <b>🔔 Remind</b>."],
+no_rules:["Inga regler eller tidspåminnelser. Använd <b>🔔 Bevaka sökningen</b> eller <b>Bevaka titel/kanal</b>.","No rules or time reminders. Use <b>🔔 Watch this search</b> or <b>Watch title/channel</b>."],
+edit:["Ändra","Edit"],snoozed_lbl:["💤 Snoozad","💤 Snoozed"],cancel_snooze:["Avbryt snooze","Cancel snooze"],deleted:["Borttagen","Removed"],confirm_del:["Ta bort regeln?","Remove this rule?"],
+start_lbl:["start","start"],with_notice:["med notisen","with the notice"],at_start:["vid start","at start"],rule_tag:["regel","rule"],
+tune_to:["📺 → kanal {n}","📺 → channel {n}"],tune_saved:["(sparat)","(saved)"],actions_n:["⚡ {n} åtgärd(er)","⚡ {n} action(s)"],
+b_time:["⏰ Tid","⏰ Time"],b_live:["Live","Live"],b_movie:["Film","Movie"],b_series:["Serie","Series"],
+meta_search:["Sök","Search"],meta_chan:["Kanal","Channel"],meta_descr:["inkl. beskrivning","incl. description"],
+/* modal */
+h_time:["Tidspåminnelse","Time reminder"],s_time:["Notis, åtgärder och/eller kanalbyte vid ett klockslag – oberoende av EPG.","Notification, actions and/or channel change at a set time – independent of the EPG."],
+h_prog:["Påminn om program","Remind about program"],h_title:["Bevaka programtitel","Watch program title"],s_title:["Notis varje gång ett program matchar (alla kanaler om du inte anger kanal).","Alerts every time a program matches (all channels unless you set a channel)."],
+h_chan:["Bevaka kanal","Watch channel"],s_chan2:["Notis för program på kanalen. Lägg till sökord för att begränsa, annars notis för ALLA program.","Alerts for programs on the channel. Add keywords to narrow it down, otherwise you get alerts for ALL programs."],
+h_newt:["Bevaka nya titlar","Watch new titles"],s_newt:["Notis när katalogen uppdateras och en ny titel matchar sökordet.","Alert when the catalog updates and a new title matches the keyword."],
+h_newt2:["Notis när nya titlar som matchar sökningen läggs till.","Alert when new titles that match the search are added."],
+h_chans:["Bevaka kanaler","Watch channels"],s_chans:["Kanalmönster från sökningen.","Channel pattern from the search."],
+h_watch:["Bevaka sökningen","Watch the search"],s_watch:["Skapar en regel som ger notis för varje matchande program framöver.","Creates a rule that alerts for every matching program from now on."],
+h_edit:["Ändra påminnelse","Edit reminder"],new_prefix:["Nytt: ","New: "],chan_prefix:["Kanal: ","Channel: "],
+sec_what:["Vad ska bevakas","What to watch"],sec_notify:["Notis","Notification"],sec_tune:["📺 Kanalbyte på TV-boxen","📺 Channel change on the TV box"],sec_actions:["⚡ Åtgärder (röst, ljud, tjänster …)","⚡ Actions (voice, sound, services …)"],sec_cond:["Villkor","Conditions"],
+f_label_time:["Text i notisen","Text in the notification"],f_label_time_ph:["t.ex. Dags för nyheterna","e.g. Time for the news"],f_label:["Namn (valfritt, variabeln {label})","Name (optional, the {label} variable)"],
+f_at:["Klockslag","Time"],f_repeat:["Upprepning","Repeat"],f_date:["Datum","Date"],f_date_ph:["ÅÅÅÅ-MM-DD","YYYY-MM-DD"],f_weekdays:["Veckodagar","Weekdays"],
+f_pat:["Sökord i programtitel (wildcards, komma, -uteslut)","Keywords in program title (wildcards, comma, -exclude)"],f_pat_new:["Sökord i titel (wildcards, komma, -uteslut)","Keywords in title (wildcards, comma, -exclude)"],
+f_chanpat:["Kanal (wildcard, tomt = alla kanaler)","Channel (wildcard, empty = all channels)"],f_in_descr:["Sök även i programbeskrivning","Also search the program description"],
+f_lead:["Påminn minuter före start","Remind minutes before start"],lead0:["vid start","at start"],lead_n:["{n} min","{n} min"],
+f_ntype:["Notistyp","Notification type"],f_devs:["Skicka till enhet(er)","Send to device(s)"],
+d_none_nt:["Ingen notis skickas – endast kanalbyte/åtgärder.","No notification is sent – only channel change/actions."],d_persistent:["Visas i Home Assistants notisikon – ingen enhet behövs.","Shown under Home Assistant's notification bell – no device needed."],
+d_empty:["Inga enheter hittades.","No devices found."],
+f_title_tpl:["Rubrik (egen text, tomt = standard)","Title (your own text, empty = default)"],f_msg_tpl:["Meddelande (egen text, tomt = standard)","Message (your own text, empty = default)"],
+title_ph:["📺 {title}","📺 {title}"],msg_ph:["{status}","{status}"],
+f_buttons:["Knappar i mobilnotisen: Snooze och Byt kanal","Buttons in the mobile notification: Snooze and Change channel"],f_snooze_min:["Snooze (minuter)","Snooze (minutes)"],
+f_only_home:["Bara om någon är hemma (röst, ljud, kanalbyte)","Only if someone is home (voice, sound, channel change)"],f_ignore_quiet:["Ignorera tysta timmar för denna påminnelse","Ignore quiet hours for this reminder"],
+ins_label:["Infoga:","Insert:"],ins_var:["{ } variabel…","{ } variable…"],ins_ent:["Entitet…","Entity…"],ins_state:["värde","value"],ins_name:["namn","name"],ins_attr:["attribut","attribute"],ins_attr_ph:["attribut","attribute"],ins_btn:["Infoga","Insert"],
+tune_on:["Växla TV-boxen automatiskt till kanalen","Switch the TV box to the channel automatically"],tune_search_ph:["Sök kanal (valfritt – eller ange bara kanalnummer)","Search channel (optional – or just enter a channel number)"],
+tune_num_ph:["Kanalnummer, t.ex. 11","Channel number, e.g. 11"],tune_rem_ph:["TV-box, t.ex. remote.tv_box","TV box, e.g. remote.tv_box"],
+tune_when_start:["Byt kanal vid programstart","Change channel at program start"],tune_when_notify:["Byt kanal samtidigt med notisen","Change channel together with the notice"],
+tune_remember:["Kom ihåg kanalnumret för denna kanal","Remember the channel number for this channel"],tune_empty_hint:["Tomt nummer = använd sparat kanalnummer per kanal (Inställningar).","Empty number = use the channel number saved per channel (Settings)."],
+tune_pre:["Slå på först (valfritt): entitet som slås på innan kanalbytet","Turn on first (optional): entity to switch on before the channel change"],tune_pre_ph:["t.ex. switch.tv_plug eller remote.tv_box","e.g. switch.tv_plug or remote.tv_box"],tune_pre_wait:["Vänta (sek)","Wait (sec)"],
+a_add:["Lägg till åtgärd:","Add action:"],a_tts:["Läs upp text","Read text aloud"],a_sound:["Spela ljud","Play sound"],a_service:["Anropa tjänst","Call service"],a_set_entity:["Sätt entitet","Set entity"],
+a_none:["Inga åtgärder. Lägg till röst, ljud, en tjänst eller sätt en entitet.","No actions. Add voice, sound, a service or set an entity."],
+a_when:["När","When"],a_when_notify:["vid notisen","at the notice"],a_when_start:["vid programstart","at program start"],a_test:["▶ Testa","▶ Test"],a_text:["Text som läses upp","Text to read aloud"],
+a_text_ph:["t.ex. {title} börjar om {minutes} minuter på {channel}. Det är {state:sensor.temp_ute} grader ute.","e.g. {title} starts in {minutes} minutes on {channel}. It is {state:sensor.outdoor_temp} degrees outside."],
+a_players:["Spela på mediaspelare","Play on media player(s)"],a_volume:["Volym % (valfritt)","Volume % (optional)"],a_engine:["TTS-motor (tomt = standard)","TTS engine (empty = default)"],a_lang:["Språk (tomt = standard)","Language (empty = default)"],
+a_src:["Källa","Source"],a_src_file:["Fil i HA:s media-mapp","File in HA's media folder"],a_src_url:["URL","URL"],
+a_file_ph:["t.ex. ding.mp3  eller  ljud/ding.mp3","e.g. ding.mp3  or  sounds/ding.mp3"],a_url_ph:["https://example.com/ljud.mp3","https://example.com/sound.mp3"],a_file_hint:["Lägg filen i HA:s media-mapp (Inställningar → System → Lagring → Media).","Put the file in HA's media folder (Settings → System → Storage → Media)."],
+a_svc:["Tjänst (domän.tjänst)","Service (domain.service)"],a_svc_ex:["Exempel…","Examples…"],a_data:["Data (JSON) – variabler fungerar i textvärden","Data (JSON) – variables work in text values"],
+a_ent:["Entitet","Entity"],a_val:["Värde (on/off, text, tal – variabler fungerar)","Value (on/off, text, number – variables work)"],
+t_ok:["Klart","Done"],t_sent:["Skickat","Sent"],
+test_sent:["Testnotis skickad","Test notification sent"],tune_sent:["Kanalbyte skickat","Channel change sent"],rem_saved:["Påminnelse sparad","Reminder saved"],
+chan_btn:["Byt kanal","Change channel"],tune_now_h:["📺 Växla TV-boxen nu","📺 Change the TV box now"],remember:["Kom ihåg","Remember"],
+remind_tune:["📺 Påminn + byt kanal","📺 Remind + change channel"],remind_more:["＋ Ytterligare påminnelse","＋ Another reminder"],remind:["🔔 Påminn","🔔 Remind"],
+running_now:["pågår nu","on now"],chan_word:["kanal","channel"],no_num:["Inget kanalnummer sparat","No channel number saved"],time_chan_btn:["⏰ Tidsstyrd notis / kanalbyte","⏰ Timed notice / channel change"],
+no_events:["Inga händelser ännu.","No events yet."],when_col:["När","When"],event_col:["Händelse","Event"],
+tune_title:["Manuellt byte","Manual change"],
+fav_on:["Favorit","Favorite"],
+/* felkoder från servern */
+err_tts_text:["Ange text som ska läsas upp.","Enter the text to read aloud."],err_pick_player:["Välj minst en mediaspelare.","Pick at least one media player."],
+err_sound_value:["Ange fil eller URL för ljudet.","Enter a file or URL for the sound."],err_service_name:["Tjänsten ska ha formen domän.tjänst, t.ex. light.turn_on.","The service must look like domain.service, e.g. light.turn_on."],
+err_service_json:["Data måste vara giltig JSON (ett objekt).","Data must be valid JSON (an object)."],err_entity_id:["Ange en giltig entitet, t.ex. switch.tv_plug.","Enter a valid entity, e.g. switch.tv_plug."],
+err_action_type:["Okänd åtgärdstyp.","Unknown action type."],err_unknown_type:["Okänd påminnelsetyp.","Unknown reminder type."],err_unknown_ntype:["Okänd notistyp.","Unknown notification type."],
+err_number_digits:["Kanalnummer får bara innehålla siffror.","The channel number may only contain digits."],err_bad_options:["Ogiltiga alternativ.","Invalid options."],
+err_pick_device:["Välj minst en enhet att skicka till.","Pick at least one device to send to."],err_nothing_to_do:["Välj en notis, ett kanalbyte eller minst en åtgärd.","Pick a notification, a channel change or at least one action."],
+err_pick_remote:["Ange vilken TV-box (remote-entitet) som ska styras.","Enter which TV box (remote entity) to control."],err_need_number:["Ange kanalnummer.","Enter a channel number."],
+err_missing_program:["Programmet saknar kanal eller starttid.","The program has no channel or start time."],err_pattern_needed:["Ange sökord eller kanal.","Enter keywords or a channel."],
+err_time_invalid:["Ogiltigt klockslag.","Invalid time."],err_date_invalid:["Ogiltigt datum (ÅÅÅÅ-MM-DD).","Invalid date (YYYY-MM-DD)."],err_time_past:["Tidpunkten har redan passerat.","That time has already passed."],
+err_pick_weekday:["Välj minst en veckodag.","Pick at least one weekday."],err_not_found:["Hittades inte.","Not found."],err_empty_keyword:["Skriv ett sökord först.","Type a keyword first."],err_internal:["Internt fel i addonen – se loggen.","Internal add-on error – see the log."],
+play_h:["Uppspelning", "Playback"],
+play_players:["Standardspelare (mediaspelare)", "Default players (media players)"],
+play_fmt:["Format", "Format"],
+play_fmt_hls:["HLS (.m3u8) – rekommenderas", "HLS (.m3u8) – recommended"],
+play_fmt_ts:["MPEG-TS (.ts)", "MPEG-TS (.ts)"],
+play_ct:["Innehållstyp", "Content type"],
+play_ct_auto:["Auto (VLC → music, annars efter format)", "Auto (VLC → music, otherwise by format)"],
+play_hint:["Strömadressen byggs av din Xtream/M3U-källa och innehåller inloggning. Den skickas till mediaspelaren men sparas aldrig i påminnelser, historik eller events. Chromecast/Google TV: HLS. VLC: välj gärna HLS. Kodi: valfritt.", "The stream address is built from your Xtream/M3U source and contains your login. It is sent to the media player but never stored in reminders, history or events. Chromecast/Google TV: HLS. VLC: HLS is fine. Kodi: either."],
+a_play:["Spela kanal", "Play channel"],
+a_play_hint:["Spelar kanalen på vald mediaspelare (Chromecast, VLC, Kodi, Google TV …). Kanalen är programmets kanal; för tidspåminnelser används kanalnumret under Kanalbyte. Räknas som ljud: tysta timmar och ”bara om någon är hemma” gäller.", "Plays the channel on the chosen media player (Chromecast, VLC, Kodi, Google TV …). The channel is the program's channel; for time reminders the channel number under Channel change is used. Counts as sound: quiet hours and “only if someone is home” apply."],
+play_btn_s:["▶ Spela", "▶ Play"],
+play_title:["Spela kanal", "Play channel"],
+play_dev:["Spela på enhet", "Play on device"],
+play_here:["🖥 Titta här", "🖥 Watch here"],
+vlc_here:["🎞 Öppna i VLC på den här enheten", "🎞 Open in VLC on this device"],
+vlc_btn:["🎞 VLC", "🎞 VLC"],
+vlc_copy:["📋 Kopiera adress", "📋 Copy address"],
+vlc_copied:["Adress kopierad – klistra in i VLC (Ctrl+N / Nätverksström)", "Address copied – paste it into VLC (Ctrl+N / Network stream)"],
+vlc_opened:["Skickat till VLC på den här enheten", "Sent to VLC on this device"],
+vlc_downloaded:["Spellista hämtad – öppna filen med VLC", "Playlist downloaded – open the file with VLC"],
+vlc_hint:["Öppnar strömmen i VLC på den enhet där du sitter (Android, iPhone/iPad, Windows, Mac, Linux). Adressen innehåller din inloggning – dela den inte.", "Opens the stream in VLC on the device you are using (Android, iPhone/iPad, Windows, Mac, Linux). The address contains your login – do not share it."],
+vlc_err:["Ingen ström hittades för den här kanalen", "No stream found for this channel"],
+
+play_sent:["Uppspelning skickad", "Playback sent"],
+play_nodev:["Inga mediaspelare hittades – välj enhet eller titta här.", "No media players found – pick a device or watch here."],
+player_err:["Strömmen kunde inte spelas i webbläsaren. Prova ”Spela på enhet”, eller kontrollera att leverantören erbjuder HLS (.m3u8).", "The stream could not be played in the browser. Try “Play on device”, or check that your provider offers HLS (.m3u8)."],
+play_no_stream:["Kanalen saknar ström (kräver Xtream eller M3U)", "This channel has no stream (requires Xtream or M3U)"],
+season:["Säsong", "Season"],
+player_err_vod:["Filen kunde inte spelas i webbläsaren (t.ex. .mkv stöds inte av webbläsare). Använd ”Spela på enhet”.", "The file could not be played in the browser (e.g. .mkv is not supported by browsers). Use “Play on device”."]
+};
+
+/* additional UI languages */
+const LX={"de": {"app_name": "EPG-Erinnerungen", "refresh": "Aktualisieren", "refresh_tip": "EPG/Katalog jetzt neu abrufen", "tab_main": "Übersicht", "tab_grid": "Programm", "tab_settings": "Einstellungen", "tab_help": "Hilfe", "k_live": "Live", "k_series": "Serien", "k_movie": "Filme", "s_prog": "Sendungen", "s_chan": "Sender", "search": "Suchen", "q_ph": "Suchbegriffe, z. B.  Fußball, Tor*, -Frauen   (* und ? sind Platzhalter)", "when": "Zeit", "w_now": "Jetzt", "w_today": "Heute", "w_tomorrow": "Morgen", "w_week": "7 Tage", "w_all": "Alle", "chan_ph": "Sender (Platzhalter), z. B. ARD*", "in_descr": "Beschreibung durchsuchen", "favs": "Favoriten", "saved_kw": "Gespeicherte Suchen", "save_search": "Suche speichern", "none_saved": "– noch keine gespeichert", "search_hint": "Mehrere Suchbegriffe: mit Komma trennen. Ausschließen mit <code>-Wort</code>. <code>*</code> = beliebiger Text, <code>?</code> = ein Zeichen. Mit Platzhalter muss der ganze Titel passen: <code>Nachrichten*</code> = beginnt mit, <code>*Finale*</code> = enthält.", "scheduled": "Geplant", "time_rem": "Zeiterinnerung", "rules_h": "Regeln & Zeiten", "now": "Jetzt", "h2": "2 Stunden", "h3": "3 Stunden", "h6": "6 Stunden", "h12": "12 Stunden", "g_chan_ph": "Sender (Platzhalter) z. B. ARD*", "g_hl_ph": "Sendungen hervorheben z. B. Fußball*", "g_hint": "Sendung anklicken für Erinnerung und/oder Senderwechsel. Sender anklicken, um jetzt oder zeitgesteuert zu wechseln. ⭐ = Favorit. Rote Linie = jetzt, 🔔 = Erinnerung gesetzt.", "status": "Status", "def_h": "Standardwerte für neue Erinnerungen", "lead_lbl": "Minuten vor Beginn erinnern", "ntype_lbl": "Benachrichtigungsart", "devices_lbl": "Geräte", "snooze_def": "Standard-Schlummern (Minuten)", "save_def": "Standardwerte speichern", "send_test": "Test senden", "save": "Speichern", "voice_h": "Sprache (TTS)", "tts_engine": "Standard-TTS-Engine", "tts_lang": "Sprachcode der Stimme (leer = wie Oberfläche)", "voice_hint": "Beispiel-Engines: tts.home_assistant_cloud (Nabu Casa), tts.google_translate_en_com. Die Sprache wird auf den Mediaplayern abgespielt, die Sie pro Aktion wählen.", "quiet_h": "Ruhezeiten & Zuhause-Bedingung", "quiet_en": "Ruhezeiten aktivieren (keine Sprache/Töne)", "quiet_from": "Von", "quiet_to": "Bis", "quiet_hint": "Gilt für die Aktionen Sprache und Ton. Benachrichtigungen werden wie gewohnt gesendet. Pro Erinnerung überschreibbar.", "home_lbl": "Personen, die als „zu Hause“ zählen", "home_hint": "Wird von „Nur wenn jemand zu Hause ist“ bei einer Erinnerung verwendet. Keine Auswahl = immer.", "tv_h": "TV-Box – automatischer Senderwechsel", "tv_entity": "Standard-TV-Box (Remote-Entität)", "tv_delay": "Pause zwischen den Ziffern (Sek.)", "tv_suffix": "Befehl nach den Ziffern (optional, z. B. OK)", "tv_pre_ent": "TV zuerst einschalten – Entität (optional)", "tv_pre_wait": "Warten (Sek.)", "tv_test": "Senderwechsel testen", "chmap_h": "Gespeicherte Sendernummern", "chmap_none": "Noch keine – „Sendernummer merken“ beim Erstellen einer Erinnerung ankreuzen.", "hist_h": "Letzte Ereignisse", "ha_h": "Home Assistant: Entitäten & Ereignisse", "channel_ph": "Sender", "close": "Schließen", "cancel": "Abbrechen", "save_rem": "Erinnerung speichern", "saved_ok": "Gespeichert", "st_channels": "Sender", "st_programs": "Sendungen", "st_series": "Serien", "st_movies": "Filme", "st_epg": "EPG aktualisiert", "st_updating": "Wird aktualisiert…", "st_errors": "Fehler", "st_never": "nie", "st_noconf": "Keine EPG-URL konfiguriert – in der Add-on-Konfiguration eintragen", "st_source": "Quelle", "st_xtream": "Xtream-API", "st_xtream_yes": "Ja (Live, Serien, Filme)", "st_xtream_no": "Nein (nur EPG/M3U)", "st_cp": "Sender / Sendungen", "st_sm": "Serien / Filme", "st_catupd": "Katalog aktualisiert", "st_tz": "Zeitzone", "st_ver": "Version", "st_err": "Fehler", "kn_live_prog": "Live › Sendungen", "kn_live_chan": "Live › Sender", "kn_series": "Serien", "kn_movie": "Filme", "all_cats": "Alle Kategorien", "active_filter": "Aktiver Filter", "f_search": "Suche", "f_when": "Zeit", "f_chan": "Sender", "f_descr": "inkl. Beschreibung", "f_cat": "Kategorie", "w_now_long": "Läuft jetzt", "hits": "Treffer", "watch_search": "Diese Suche beobachten", "clear": "Zurücksetzen", "no_hits": "Keine Ergebnisse.", "no_epg": " EPG-Daten wurden noch nicht abgerufen.", "err": "Fehler", "no_title": "(ohne Titel)", "on_air": "● LÄUFT", "r_set": "✓ Erinnerung", "r_add": "Erinnern", "watch_title": "Titel beobachten", "watch_title_tip": "Alle Sendungen mit diesem Titel beobachten", "no_epg_now": "Gerade kein EPG", "now_tag": "● JETZT", "watch_chan": "Sender beobachten", "watch_new": "Neues beobachten", "watch_new_tip": "Benachrichtigen, wenn ein neuer Titel mit diesem Namen erscheint", "added": "hinzugefügt", "show_more": "Mehr anzeigen", "left": "übrig", "write_kw_first": "Zuerst ein Suchwort eingeben", "kw_saved": "Suche gespeichert", "remove": "Entfernen", "today": "Heute", "tomorrow": "Morgen", "yesterday": "Gestern", "rel_now": "jetzt", "rel_in": "in ", "rel_ago": " her", "d_short": "T", "h_short": "Std", "min_short": "Min", "nt_push": "Push an Mobile App", "nt_plain": "Einfache Benachrichtigung (TV/andere)", "nt_persistent": "Dauerhafte Benachrichtigung in HA", "nt_tts": "Sprachnachricht (TTS)", "nt_none": "Keine Benachrichtigung (nur Senderwechsel/Aktionen)", "nts_push": "Push", "nts_plain": "Einfach", "nts_persistent": "Dauerhaft", "nts_tts": "Sprache", "nts_none": "Keine Benachrichtigung", "wd0": "Mo", "wd1": "Di", "wd2": "Mi", "wd3": "Do", "wd4": "Fr", "wd5": "Sa", "wd6": "So", "rep_once": "Einmalig", "rep_daily": "Jeden Tag", "rep_weekdays": "Mo–Fr", "rep_custom": "Ausgewählte Tage", "rep_txt_once": "Einmalig {date} {time}", "rep_txt_daily": "Jeden Tag {time}", "rep_txt_weekdays": "Mo–Fr {time}", "rep_txt_custom": "{days} {time}", "no_sched": "Keine geplanten Benachrichtigungen.<br>Sendung suchen und <b>🔔 Erinnern</b> drücken.", "no_rules": "Keine Regeln oder Zeiterinnerungen. Nutzen Sie <b>🔔 Diese Suche beobachten</b> oder <b>Titel/Sender beobachten</b>.", "edit": "Bearbeiten", "snoozed_lbl": "💤 Geschlummert", "cancel_snooze": "Schlummern abbrechen", "deleted": "Entfernt", "confirm_del": "Diese Regel entfernen?", "start_lbl": "Start", "with_notice": "mit der Benachrichtigung", "at_start": "bei Beginn", "rule_tag": "Regel", "tune_to": "📺 → Sender {n}", "tune_saved": "(gespeichert)", "actions_n": "⚡ {n} Aktion(en)", "b_time": "⏰ Zeit", "b_live": "Live", "b_movie": "Film", "b_series": "Serie", "meta_search": "Suche", "meta_chan": "Sender", "meta_descr": "inkl. Beschreibung", "h_time": "Zeiterinnerung", "s_time": "Benachrichtigung, Aktionen und/oder Senderwechsel zu einer festen Zeit – unabhängig vom EPG.", "h_prog": "An Sendung erinnern", "h_title": "Sendungstitel beobachten", "s_title": "Benachrichtigt bei jeder passenden Sendung (alle Sender, sofern kein Sender gewählt).", "h_chan": "Sender beobachten", "s_chan2": "Benachrichtigt bei Sendungen des Senders. Mit Suchbegriffen eingrenzen, sonst gibt es Hinweise für ALLE Sendungen.", "h_newt": "Neue Titel beobachten", "s_newt": "Benachrichtigt, wenn der Katalog aktualisiert wird und ein neuer Titel zum Suchwort passt.", "h_newt2": "Benachrichtigt, wenn neue Titel hinzukommen, die zur Suche passen.", "h_chans": "Sender beobachten", "s_chans": "Sendermuster aus der Suche.", "h_watch": "Suche beobachten", "s_watch": "Erstellt eine Regel, die ab jetzt bei jeder passenden Sendung benachrichtigt.", "h_edit": "Erinnerung bearbeiten", "new_prefix": "Neu: ", "chan_prefix": "Sender: ", "sec_what": "Was beobachtet werden soll", "sec_notify": "Benachrichtigung", "sec_tune": "📺 Senderwechsel an der TV-Box", "sec_actions": "⚡ Aktionen (Sprache, Ton, Dienste …)", "sec_cond": "Bedingungen", "f_label_time": "Text in der Benachrichtigung", "f_label_time_ph": "z. B. Zeit für die Nachrichten", "f_label": "Name (optional, die Variable {label})", "f_at": "Zeit", "f_repeat": "Wiederholen", "f_date": "Datum", "f_date_ph": "JJJJ-MM-TT", "f_weekdays": "Wochentage", "f_pat": "Suchbegriffe im Sendungstitel (Platzhalter, Komma, -ausschließen)", "f_pat_new": "Suchbegriffe im Titel (Platzhalter, Komma, -ausschließen)", "f_chanpat": "Sender (Platzhalter, leer = alle Sender)", "f_in_descr": "Auch die Sendungsbeschreibung durchsuchen", "f_lead": "Minuten vor Beginn erinnern", "lead0": "bei Beginn", "lead_n": "{n} Min", "f_ntype": "Benachrichtigungsart", "f_devs": "Senden an Gerät(e)", "d_none_nt": "Es wird keine Benachrichtigung gesendet – nur Senderwechsel/Aktionen.", "d_persistent": "Wird unter der Benachrichtigungsglocke von Home Assistant angezeigt – kein Gerät nötig.", "d_empty": "Keine Geräte gefunden.", "f_title_tpl": "Titel (eigener Text, leer = Standard)", "f_msg_tpl": "Nachricht (eigener Text, leer = Standard)", "title_ph": "📺 {title}", "msg_ph": "{status}", "f_buttons": "Schaltflächen in der mobilen Benachrichtigung: Schlummern und Sender wechseln", "f_snooze_min": "Schlummern (Minuten)", "f_only_home": "Nur wenn jemand zu Hause ist (Sprache, Ton, Senderwechsel)", "f_ignore_quiet": "Ruhezeiten für diese Erinnerung ignorieren", "ins_label": "Einfügen:", "ins_var": "{ } Variable…", "ins_ent": "Entität…", "ins_state": "Wert", "ins_name": "Name", "ins_attr": "Attribut", "ins_attr_ph": "Attribut", "ins_btn": "Einfügen", "tune_on": "TV-Box automatisch auf den Sender umschalten", "tune_search_ph": "Sender suchen (optional – oder einfach Sendernummer eingeben)", "tune_num_ph": "Sendernummer, z. B. 11", "tune_rem_ph": "TV-Box, z. B. remote.tv_box", "tune_when_start": "Sender bei Sendungsbeginn wechseln", "tune_when_notify": "Sender zusammen mit der Benachrichtigung wechseln", "tune_remember": "Sendernummer für diesen Sender merken", "tune_empty_hint": "Leere Nummer = die pro Sender gespeicherte Nummer verwenden (Einstellungen).", "tune_pre": "Zuerst einschalten (optional): Entität, die vor dem Senderwechsel eingeschaltet wird", "tune_pre_ph": "z. B. switch.tv_plug oder remote.tv_box", "tune_pre_wait": "Warten (Sek.)", "a_add": "Aktion hinzufügen:", "a_tts": "Text vorlesen", "a_sound": "Ton abspielen", "a_service": "Dienst aufrufen", "a_set_entity": "Entität setzen", "a_none": "Keine Aktionen. Fügen Sie Sprache, Ton, einen Dienst oder eine Entität hinzu.", "a_when": "Wann", "a_when_notify": "bei der Benachrichtigung", "a_when_start": "bei Sendungsbeginn", "a_test": "▶ Test", "a_text": "Vorzulesender Text", "a_text_ph": "z. B. {title} beginnt in {minutes} Minuten auf {channel}. Draußen sind es {state:sensor.outdoor_temp} Grad.", "a_players": "Auf Mediaplayer(n) abspielen", "a_volume": "Lautstärke % (optional)", "a_engine": "TTS-Engine (leer = Standard)", "a_lang": "Sprache (leer = Standard)", "a_src": "Quelle", "a_src_file": "Datei im Medienordner von HA", "a_src_url": "URL", "a_file_ph": "z. B. ding.mp3  oder  sounds/ding.mp3", "a_url_ph": "https://example.com/sound.mp3", "a_file_hint": "Datei im Medienordner von HA ablegen (Einstellungen → System → Speicher → Medien).", "a_svc": "Dienst (domain.service)", "a_svc_ex": "Beispiele…", "a_data": "Daten (JSON) – Variablen funktionieren in Textwerten", "a_ent": "Entität", "a_val": "Wert (on/off, Text, Zahl – Variablen funktionieren)", "t_ok": "Erledigt", "t_sent": "Gesendet", "test_sent": "Testbenachrichtigung gesendet", "tune_sent": "Senderwechsel gesendet", "rem_saved": "Erinnerung gespeichert", "chan_btn": "Sender wechseln", "tune_now_h": "📺 TV-Box jetzt umschalten", "remember": "Merken", "remind_tune": "📺 Erinnern + Sender wechseln", "remind_more": "＋ Weitere Erinnerung", "remind": "🔔 Erinnern", "running_now": "läuft jetzt", "chan_word": "Sender", "no_num": "Keine Sendernummer gespeichert", "time_chan_btn": "⏰ Zeitgesteuerte Meldung / Senderwechsel", "no_events": "Noch keine Ereignisse.", "when_col": "Wann", "event_col": "Ereignis", "tune_title": "Manueller Wechsel", "fav_on": "Favorit", "err_tts_text": "Text zum Vorlesen eingeben.", "err_pick_player": "Mindestens einen Mediaplayer auswählen.", "err_sound_value": "Datei oder URL für den Ton eingeben.", "err_service_name": "Der Dienst muss wie domain.service aussehen, z. B. light.turn_on.", "err_service_json": "Daten müssen gültiges JSON sein (ein Objekt).", "err_entity_id": "Gültige Entität eingeben, z. B. switch.tv_plug.", "err_action_type": "Unbekannter Aktionstyp.", "err_unknown_type": "Unbekannter Erinnerungstyp.", "err_unknown_ntype": "Unbekannte Benachrichtigungsart.", "err_number_digits": "Die Sendernummer darf nur Ziffern enthalten.", "err_bad_options": "Ungültige Optionen.", "err_pick_device": "Mindestens ein Gerät zum Senden auswählen.", "err_nothing_to_do": "Wählen Sie eine Benachrichtigung, einen Senderwechsel oder mindestens eine Aktion.", "err_pick_remote": "Geben Sie an, welche TV-Box (Remote-Entität) gesteuert werden soll.", "err_need_number": "Sendernummer eingeben.", "err_missing_program": "Die Sendung hat keinen Sender oder keine Startzeit.", "err_pattern_needed": "Suchbegriffe oder einen Sender eingeben.", "err_time_invalid": "Ungültige Zeit.", "err_date_invalid": "Ungültiges Datum (JJJJ-MM-TT).", "err_time_past": "Diese Zeit ist bereits vergangen.", "err_pick_weekday": "Mindestens einen Wochentag auswählen.", "err_not_found": "Nicht gefunden.", "err_empty_keyword": "Zuerst ein Suchwort eingeben.", "err_internal": "Interner Add-on-Fehler – siehe Protokoll.", "v_title": "Programmtitel", "v_channel": "Sendername", "v_number": "Sendernummer (falls bekannt)", "v_start": "Startzeit, z. B. 20:00", "v_end": "Endzeit", "v_date": "Datum, JJJJ-MM-TT", "v_time": "Uhrzeit, zu der die Erinnerung gesendet wird", "v_minutes": "Minuten bis zum Start", "v_status": "Fertiger Text, z. B. „Beginnt in 10 Min auf ARD (20:00)“", "v_label": "Ihr Name für die Erinnerung", "v_lead": "Gewählte Minuten vor Beginn", "v_description": "Sendungsbeschreibung (erste 200 Zeichen)", "v_category": "Sendungskategorie", "v_reminder_id": "ID der Erinnerung", "play_h": "Wiedergabe", "play_players": "Standard-Player (Mediaplayer)", "play_fmt": "Format", "play_fmt_hls": "HLS (.m3u8) – empfohlen", "play_fmt_ts": "MPEG-TS (.ts)", "play_ct": "Inhaltstyp", "play_ct_auto": "Auto (VLC → music, sonst nach Format)", "play_hint": "Die Stream-Adresse wird aus Ihrer Xtream/M3U-Quelle erzeugt und enthält die Zugangsdaten. Sie wird an den Mediaplayer gesendet, aber nie in Erinnerungen, Verlauf oder Ereignissen gespeichert. Chromecast/Google TV: HLS. VLC: HLS. Kodi: beliebig.", "a_play": "Sender abspielen", "a_play_hint": "Spielt den Sender auf dem gewählten Mediaplayer (Chromecast, VLC, Kodi, Google TV …). Es wird der Sender der Sendung verwendet; bei Zeiterinnerungen die Sendernummer unter Senderwechsel. Zählt als Ton: Ruhezeiten und „nur wenn jemand zu Hause ist“ gelten.", "play_btn_s": "▶ Abspielen", "play_title": "Sender abspielen", "play_dev": "Auf Gerät abspielen", "play_here": "🖥 Hier ansehen", "play_sent": "Wiedergabe gesendet", "play_nodev": "Keine Mediaplayer gefunden – Gerät wählen oder hier ansehen.", "player_err": "Der Stream konnte im Browser nicht abgespielt werden. Versuchen Sie „Auf Gerät abspielen“ oder prüfen Sie, ob Ihr Anbieter HLS (.m3u8) bietet.", "play_no_stream": "Sender hat keinen Stream (Xtream oder M3U nötig)", "season": "Staffel", "player_err_vod": "Die Datei konnte im Browser nicht abgespielt werden (z. B. wird .mkv nicht unterstützt). Nutzen Sie „Auf Gerät abspielen“."}, "fr": {"app_name": "Rappels EPG", "refresh": "Actualiser", "refresh_tip": "Récupérer l'EPG/le catalogue maintenant", "tab_main": "Aperçu", "tab_grid": "Guide", "tab_settings": "Paramètres", "tab_help": "Aide", "k_live": "Direct", "k_series": "Séries", "k_movie": "Films", "s_prog": "Programmes", "s_chan": "Chaînes", "search": "Rechercher", "q_ph": "Mots-clés, p. ex.  football, but*, -femmes   (* et ? sont des jokers)", "when": "Quand", "w_now": "Maintenant", "w_today": "Aujourd'hui", "w_tomorrow": "Demain", "w_week": "7 jours", "w_all": "Tout", "chan_ph": "Chaîne (joker), p. ex. TF1*", "in_descr": "Rechercher dans la description", "favs": "Favoris", "saved_kw": "Recherches enregistrées", "save_search": "Enregistrer la recherche", "none_saved": "– aucune pour l'instant", "search_hint": "Plusieurs mots-clés : séparez-les par des virgules. Excluez avec <code>-mot</code>. <code>*</code> = n'importe quel texte, <code>?</code> = un caractère. Avec un joker, tout le titre doit correspondre : <code>Infos*</code> = commence par, <code>*finale*</code> = contient.", "scheduled": "Planifié", "time_rem": "Rappel horaire", "rules_h": "Règles et horaires", "now": "Maintenant", "h2": "2 heures", "h3": "3 heures", "h6": "6 heures", "h12": "12 heures", "g_chan_ph": "Chaîne (joker) p. ex. TF1*", "g_hl_ph": "Surligner des programmes p. ex. football*", "g_hint": "Cliquez sur un programme pour un rappel et/ou un changement de chaîne. Cliquez sur une chaîne pour changer maintenant ou planifier. ⭐ = favori. Ligne rouge = maintenant, 🔔 = rappel défini.", "status": "Statut", "def_h": "Valeurs par défaut des nouveaux rappels", "lead_lbl": "Rappeler X minutes avant le début", "ntype_lbl": "Type de notification", "devices_lbl": "Appareils", "snooze_def": "Report par défaut (minutes)", "save_def": "Enregistrer les valeurs", "send_test": "Envoyer un test", "save": "Enregistrer", "voice_h": "Voix (TTS)", "tts_engine": "Moteur TTS par défaut", "tts_lang": "Code de langue de la voix (vide = comme l'interface)", "voice_hint": "Exemples de moteurs : tts.home_assistant_cloud (Nabu Casa), tts.google_translate_en_com. La voix est lue sur les lecteurs multimédia choisis pour chaque action.", "quiet_h": "Heures calmes et condition « à la maison »", "quiet_en": "Activer les heures calmes (pas de voix/son)", "quiet_from": "De", "quiet_to": "À", "quiet_hint": "S'applique aux actions Voix et Son. Les notifications sont envoyées normalement. Peut être ignoré par rappel.", "home_lbl": "Personnes comptant comme « à la maison »", "home_hint": "Utilisé par « Seulement si quelqu'un est à la maison » sur un rappel. Aucune sélection = toujours.", "tv_h": "Box TV – changement de chaîne automatique", "tv_entity": "Box TV par défaut (entité remote)", "tv_delay": "Délai entre les chiffres (s)", "tv_suffix": "Commande après les chiffres (facultatif, p. ex. OK)", "tv_pre_ent": "Allumer d'abord la TV – entité (facultatif)", "tv_pre_wait": "Attente (s)", "tv_test": "Tester le changement de chaîne", "chmap_h": "Numéros de chaîne enregistrés", "chmap_none": "Aucun pour l'instant – cochez « Mémoriser le numéro de chaîne » en créant un rappel.", "hist_h": "Événements récents", "ha_h": "Home Assistant : entités et événements", "channel_ph": "Chaîne", "close": "Fermer", "cancel": "Annuler", "save_rem": "Enregistrer le rappel", "saved_ok": "Enregistré", "st_channels": "Chaînes", "st_programs": "Programmes", "st_series": "Séries", "st_movies": "Films", "st_epg": "EPG mis à jour", "st_updating": "Mise à jour…", "st_errors": "erreurs", "st_never": "jamais", "st_noconf": "Aucune URL EPG configurée – saisissez-la dans la configuration de l'add-on", "st_source": "Source", "st_xtream": "API Xtream", "st_xtream_yes": "Oui (direct, séries, films)", "st_xtream_no": "Non (EPG/M3U uniquement)", "st_cp": "Chaînes / Programmes", "st_sm": "Séries / Films", "st_catupd": "Catalogue mis à jour", "st_tz": "Fuseau horaire", "st_ver": "Version", "st_err": "Erreurs", "kn_live_prog": "Direct › Programmes", "kn_live_chan": "Direct › Chaînes", "kn_series": "Séries", "kn_movie": "Films", "all_cats": "Toutes les catégories", "active_filter": "Filtre actif", "f_search": "Recherche", "f_when": "Quand", "f_chan": "Chaîne", "f_descr": "y compris la description", "f_cat": "Catégorie", "w_now_long": "En cours", "hits": "résultats", "watch_search": "Surveiller cette recherche", "clear": "Effacer", "no_hits": "Aucun résultat.", "no_epg": " Les données EPG n'ont pas encore été récupérées.", "err": "Erreur", "no_title": "(sans titre)", "on_air": "● EN DIRECT", "r_set": "✓ Rappel", "r_add": "Rappeler", "watch_title": "Surveiller le titre", "watch_title_tip": "Surveiller tous les programmes portant ce titre", "no_epg_now": "Pas d'EPG actuellement", "now_tag": "● MAINTENANT", "watch_chan": "Surveiller la chaîne", "watch_new": "Surveiller les nouveautés", "watch_new_tip": "Alerter quand un nouveau titre portant ce nom apparaît", "added": "ajouté", "show_more": "Afficher plus", "left": "restant", "write_kw_first": "Saisissez d'abord un mot-clé", "kw_saved": "Recherche enregistrée", "remove": "Supprimer", "today": "Aujourd'hui", "tomorrow": "Demain", "yesterday": "Hier", "rel_now": "maintenant", "rel_in": "dans ", "rel_ago": " il y a", "d_short": "j", "h_short": "h", "min_short": "min", "nt_push": "Push vers l'application mobile", "nt_plain": "Notification simple (TV/autre)", "nt_persistent": "Notification persistante dans HA", "nt_tts": "Message vocal (TTS)", "nt_none": "Aucune notification (changement de chaîne/actions seulement)", "nts_push": "Push", "nts_plain": "Simple", "nts_persistent": "Persistante", "nts_tts": "Voix", "nts_none": "Aucune notification", "wd0": "Lun", "wd1": "Mar", "wd2": "Mer", "wd3": "Jeu", "wd4": "Ven", "wd5": "Sam", "wd6": "Dim", "rep_once": "Une fois", "rep_daily": "Tous les jours", "rep_weekdays": "Lun–Ven", "rep_custom": "Jours choisis", "rep_txt_once": "Une fois le {date} à {time}", "rep_txt_daily": "Tous les jours à {time}", "rep_txt_weekdays": "Lun–Ven {time}", "rep_txt_custom": "{days} {time}", "no_sched": "Aucune notification planifiée.<br>Trouvez un programme et appuyez sur <b>🔔 Rappeler</b>.", "no_rules": "Aucune règle ni rappel horaire. Utilisez <b>🔔 Surveiller cette recherche</b> ou <b>Surveiller titre/chaîne</b>.", "edit": "Modifier", "snoozed_lbl": "💤 Reporté", "cancel_snooze": "Annuler le report", "deleted": "Supprimé", "confirm_del": "Supprimer cette règle ?", "start_lbl": "début", "with_notice": "avec la notification", "at_start": "au début", "rule_tag": "règle", "tune_to": "📺 → chaîne {n}", "tune_saved": "(enregistré)", "actions_n": "⚡ {n} action(s)", "b_time": "⏰ Heure", "b_live": "Direct", "b_movie": "Film", "b_series": "Série", "meta_search": "Recherche", "meta_chan": "Chaîne", "meta_descr": "y compris la description", "h_time": "Rappel horaire", "s_time": "Notification, actions et/ou changement de chaîne à une heure fixe – indépendant de l'EPG.", "h_prog": "Rappel pour un programme", "h_title": "Surveiller le titre d'un programme", "s_title": "Alerte à chaque programme correspondant (toutes les chaînes sauf si vous en indiquez une).", "h_chan": "Surveiller la chaîne", "s_chan2": "Alerte pour les programmes de la chaîne. Ajoutez des mots-clés pour affiner, sinon vous serez alerté pour TOUS les programmes.", "h_newt": "Surveiller les nouveaux titres", "s_newt": "Alerte quand le catalogue est mis à jour et qu'un nouveau titre correspond au mot-clé.", "h_newt2": "Alerte quand de nouveaux titres correspondant à la recherche sont ajoutés.", "h_chans": "Surveiller les chaînes", "s_chans": "Motif de chaîne issu de la recherche.", "h_watch": "Surveiller la recherche", "s_watch": "Crée une règle qui alerte désormais pour chaque programme correspondant.", "h_edit": "Modifier le rappel", "new_prefix": "Nouveau : ", "chan_prefix": "Chaîne : ", "sec_what": "Que surveiller", "sec_notify": "Notification", "sec_tune": "📺 Changement de chaîne sur la box TV", "sec_actions": "⚡ Actions (voix, son, services …)", "sec_cond": "Conditions", "f_label_time": "Texte de la notification", "f_label_time_ph": "p. ex. L'heure du journal", "f_label": "Nom (facultatif, variable {label})", "f_at": "Heure", "f_repeat": "Répéter", "f_date": "Date", "f_date_ph": "AAAA-MM-JJ", "f_weekdays": "Jours de la semaine", "f_pat": "Mots-clés dans le titre (jokers, virgule, -exclure)", "f_pat_new": "Mots-clés dans le titre (jokers, virgule, -exclure)", "f_chanpat": "Chaîne (joker, vide = toutes les chaînes)", "f_in_descr": "Rechercher aussi dans la description du programme", "f_lead": "Rappeler X minutes avant le début", "lead0": "au début", "lead_n": "{n} min", "f_ntype": "Type de notification", "f_devs": "Envoyer à l'appareil/aux appareils", "d_none_nt": "Aucune notification n'est envoyée – changement de chaîne/actions seulement.", "d_persistent": "Affichée sous la cloche de notifications de Home Assistant – aucun appareil requis.", "d_empty": "Aucun appareil trouvé.", "f_title_tpl": "Titre (texte libre, vide = par défaut)", "f_msg_tpl": "Message (texte libre, vide = par défaut)", "title_ph": "📺 {title}", "msg_ph": "{status}", "f_buttons": "Boutons dans la notification mobile : Reporter et Changer de chaîne", "f_snooze_min": "Report (minutes)", "f_only_home": "Seulement si quelqu'un est à la maison (voix, son, changement de chaîne)", "f_ignore_quiet": "Ignorer les heures calmes pour ce rappel", "ins_label": "Insérer :", "ins_var": "{ } variable…", "ins_ent": "Entité…", "ins_state": "valeur", "ins_name": "nom", "ins_attr": "attribut", "ins_attr_ph": "attribut", "ins_btn": "Insérer", "tune_on": "Basculer automatiquement la box TV sur la chaîne", "tune_search_ph": "Rechercher une chaîne (facultatif – ou saisissez simplement un numéro)", "tune_num_ph": "Numéro de chaîne, p. ex. 11", "tune_rem_ph": "Box TV, p. ex. remote.tv_box", "tune_when_start": "Changer de chaîne au début du programme", "tune_when_notify": "Changer de chaîne avec la notification", "tune_remember": "Mémoriser le numéro pour cette chaîne", "tune_empty_hint": "Numéro vide = utiliser le numéro enregistré par chaîne (Paramètres).", "tune_pre": "Allumer d'abord (facultatif) : entité à activer avant le changement de chaîne", "tune_pre_ph": "p. ex. switch.tv_plug ou remote.tv_box", "tune_pre_wait": "Attente (s)", "a_add": "Ajouter une action :", "a_tts": "Lire un texte à voix haute", "a_sound": "Jouer un son", "a_service": "Appeler un service", "a_set_entity": "Définir une entité", "a_none": "Aucune action. Ajoutez une voix, un son, un service ou une entité.", "a_when": "Quand", "a_when_notify": "à la notification", "a_when_start": "au début du programme", "a_test": "▶ Tester", "a_text": "Texte à lire", "a_text_ph": "p. ex. {title} commence dans {minutes} minutes sur {channel}. Il fait {state:sensor.outdoor_temp} degrés dehors.", "a_players": "Jouer sur le(s) lecteur(s) multimédia", "a_volume": "Volume % (facultatif)", "a_engine": "Moteur TTS (vide = par défaut)", "a_lang": "Langue (vide = par défaut)", "a_src": "Source", "a_src_file": "Fichier dans le dossier média de HA", "a_src_url": "URL", "a_file_ph": "p. ex. ding.mp3  ou  sounds/ding.mp3", "a_url_ph": "https://example.com/sound.mp3", "a_file_hint": "Placez le fichier dans le dossier média de HA (Paramètres → Système → Stockage → Médias).", "a_svc": "Service (domain.service)", "a_svc_ex": "Exemples…", "a_data": "Données (JSON) – les variables fonctionnent dans les valeurs texte", "a_ent": "Entité", "a_val": "Valeur (on/off, texte, nombre – les variables fonctionnent)", "t_ok": "Terminé", "t_sent": "Envoyé", "test_sent": "Notification de test envoyée", "tune_sent": "Changement de chaîne envoyé", "rem_saved": "Rappel enregistré", "chan_btn": "Changer de chaîne", "tune_now_h": "📺 Changer la box TV maintenant", "remember": "Mémoriser", "remind_tune": "📺 Rappeler + changer de chaîne", "remind_more": "＋ Autre rappel", "remind": "🔔 Rappeler", "running_now": "en cours", "chan_word": "chaîne", "no_num": "Aucun numéro de chaîne enregistré", "time_chan_btn": "⏰ Notification / changement de chaîne programmé", "no_events": "Aucun événement pour l'instant.", "when_col": "Quand", "event_col": "Événement", "tune_title": "Changement manuel", "fav_on": "Favori", "err_tts_text": "Saisissez le texte à lire.", "err_pick_player": "Choisissez au moins un lecteur multimédia.", "err_sound_value": "Saisissez un fichier ou une URL pour le son.", "err_service_name": "Le service doit ressembler à domain.service, p. ex. light.turn_on.", "err_service_json": "Les données doivent être du JSON valide (un objet).", "err_entity_id": "Saisissez une entité valide, p. ex. switch.tv_plug.", "err_action_type": "Type d'action inconnu.", "err_unknown_type": "Type de rappel inconnu.", "err_unknown_ntype": "Type de notification inconnu.", "err_number_digits": "Le numéro de chaîne ne peut contenir que des chiffres.", "err_bad_options": "Options non valides.", "err_pick_device": "Choisissez au moins un appareil.", "err_nothing_to_do": "Choisissez une notification, un changement de chaîne ou au moins une action.", "err_pick_remote": "Indiquez quelle box TV (entité remote) piloter.", "err_need_number": "Saisissez un numéro de chaîne.", "err_missing_program": "Le programme n'a ni chaîne ni heure de début.", "err_pattern_needed": "Saisissez des mots-clés ou une chaîne.", "err_time_invalid": "Heure non valide.", "err_date_invalid": "Date non valide (AAAA-MM-JJ).", "err_time_past": "Cette heure est déjà passée.", "err_pick_weekday": "Choisissez au moins un jour de la semaine.", "err_not_found": "Introuvable.", "err_empty_keyword": "Saisissez d'abord un mot-clé.", "err_internal": "Erreur interne de l'add-on – voir le journal.", "v_title": "Titre du programme", "v_channel": "Nom de la chaîne", "v_number": "Numéro de chaîne (si connu)", "v_start": "Heure de début, p. ex. 20:00", "v_end": "Heure de fin", "v_date": "Date, AAAA-MM-JJ", "v_time": "Heure d'envoi du rappel", "v_minutes": "Minutes avant le début", "v_status": "Texte prêt, p. ex. « Commence dans 10 min sur TF1 (20:00) »", "v_label": "Votre nom pour le rappel", "v_lead": "Minutes avant le début choisies", "v_description": "Description du programme (200 premiers caractères)", "v_category": "Catégorie du programme", "v_reminder_id": "ID du rappel", "play_h": "Lecture", "play_players": "Lecteurs par défaut (lecteurs multimédia)", "play_fmt": "Format", "play_fmt_hls": "HLS (.m3u8) – recommandé", "play_fmt_ts": "MPEG-TS (.ts)", "play_ct": "Type de contenu", "play_ct_auto": "Auto (VLC → music, sinon selon le format)", "play_hint": "L'adresse du flux est construite à partir de votre source Xtream/M3U et contient vos identifiants. Elle est envoyée au lecteur mais jamais stockée dans les rappels, l'historique ou les événements. Chromecast/Google TV : HLS. VLC : HLS. Kodi : au choix.", "a_play": "Lire la chaîne", "a_play_hint": "Lit la chaîne sur le lecteur choisi (Chromecast, VLC, Kodi, Google TV …). C'est la chaîne du programme ; pour les rappels horaires, le numéro de chaîne du changement de chaîne est utilisé. Compte comme du son : heures calmes et « seulement si quelqu'un est à la maison » s'appliquent.", "play_btn_s": "▶ Lire", "play_title": "Lire la chaîne", "play_dev": "Lire sur l'appareil", "play_here": "🖥 Regarder ici", "play_sent": "Lecture envoyée", "play_nodev": "Aucun lecteur multimédia trouvé – choisissez un appareil ou regardez ici.", "player_err": "Le flux n'a pas pu être lu dans le navigateur. Essayez « Lire sur l'appareil » ou vérifiez que votre fournisseur propose HLS (.m3u8).", "play_no_stream": "Cette chaîne n'a pas de flux (Xtream ou M3U requis)", "season": "Saison", "player_err_vod": "Le fichier n'a pas pu être lu dans le navigateur (p. ex. .mkv non pris en charge). Utilisez « Lire sur l'appareil »."}, "nb": {"app_name": "EPG-påminnelser", "refresh": "Oppdater", "refresh_tip": "Hent ny EPG/katalog nå", "tab_main": "Oversikt", "tab_grid": "Guide", "tab_settings": "Innstillinger", "tab_help": "Hjelp", "k_live": "Direkte", "k_series": "Serier", "k_movie": "Filmer", "s_prog": "Programmer", "s_chan": "Kanaler", "search": "Søk", "q_ph": "Søkeord, f.eks.  fotball, mål*, -damer   (* og ? er jokertegn)", "when": "Når", "w_now": "Nå", "w_today": "I dag", "w_tomorrow": "I morgen", "w_week": "7 dager", "w_all": "Alle", "chan_ph": "Kanal (jokertegn), f.eks. NRK*", "in_descr": "Søk i beskrivelse", "favs": "Favoritter", "saved_kw": "Lagrede søk", "save_search": "Lagre søk", "none_saved": "– ingen lagret ennå", "search_hint": "Flere søkeord: skill med komma. Ekskluder med <code>-ord</code>. <code>*</code> = valgfri tekst, <code>?</code> = ett tegn. Med jokertegn må hele tittelen passe: <code>Nyheter*</code> = begynner med, <code>*finale*</code> = inneholder.", "scheduled": "Planlagt", "time_rem": "Tidspåminnelse", "rules_h": "Regler og tider", "now": "Nå", "h2": "2 timer", "h3": "3 timer", "h6": "6 timer", "h12": "12 timer", "g_chan_ph": "Kanal (jokertegn) f.eks. NRK*", "g_hl_ph": "Fremhev programmer f.eks. fotball*", "g_hint": "Klikk på et program for påminnelse og/eller kanalbytte. Klikk på en kanal for å bytte nå eller planlegge. ⭐ = favoritt. Rød linje = nå, 🔔 = påminnelse satt.", "status": "Status", "def_h": "Standardverdier for nye påminnelser", "lead_lbl": "Minutter før start", "ntype_lbl": "Varseltype", "devices_lbl": "Enheter", "snooze_def": "Standard slumring (minutter)", "save_def": "Lagre standardverdier", "send_test": "Send test", "save": "Lagre", "voice_h": "Tale (TTS)", "tts_engine": "Standard TTS-motor", "tts_lang": "Språkkode for stemmen (tom = samme som grensesnittet)", "voice_hint": "Eksempler på motorer: tts.home_assistant_cloud (Nabu Casa), tts.google_translate_en_com. Talen spilles av på mediespillerne du velger per handling.", "quiet_h": "Stille timer og hjemme-betingelse", "quiet_en": "Aktiver stille timer (ingen tale/lyd)", "quiet_from": "Fra", "quiet_to": "Til", "quiet_hint": "Gjelder handlingene Tale og Lyd. Varsler sendes som vanlig. Kan overstyres per påminnelse.", "home_lbl": "Personer som regnes som «hjemme»", "home_hint": "Brukes av «Bare hvis noen er hjemme» på en påminnelse. Ingen valgt = alltid.", "tv_h": "TV-boks – automatisk kanalbytte", "tv_entity": "Standard TV-boks (remote-entitet)", "tv_delay": "Pause mellom sifre (sek.)", "tv_suffix": "Kommando etter sifrene (valgfritt, f.eks. OK)", "tv_pre_ent": "Slå på TV først – entitet (valgfritt)", "tv_pre_wait": "Vent (sek.)", "tv_test": "Test kanalbytte", "chmap_h": "Lagrede kanalnumre", "chmap_none": "Ingen ennå – kryss av «Husk kanalnummeret» når du lager en påminnelse.", "hist_h": "Siste hendelser", "ha_h": "Home Assistant: entiteter og hendelser", "channel_ph": "Kanal", "close": "Lukk", "cancel": "Avbryt", "save_rem": "Lagre påminnelse", "saved_ok": "Lagret", "st_channels": "Kanaler", "st_programs": "Programmer", "st_series": "Serier", "st_movies": "Filmer", "st_epg": "EPG oppdatert", "st_updating": "Oppdaterer…", "st_errors": "feil", "st_never": "aldri", "st_noconf": "Ingen EPG-URL konfigurert – skriv den inn i tilleggets konfigurasjon", "st_source": "Kilde", "st_xtream": "Xtream-API", "st_xtream_yes": "Ja (direkte, serier, filmer)", "st_xtream_no": "Nei (kun EPG/M3U)", "st_cp": "Kanaler / Programmer", "st_sm": "Serier / Filmer", "st_catupd": "Katalog oppdatert", "st_tz": "Tidssone", "st_ver": "Versjon", "st_err": "Feil", "kn_live_prog": "Direkte › Programmer", "kn_live_chan": "Direkte › Kanaler", "kn_series": "Serier", "kn_movie": "Filmer", "all_cats": "Alle kategorier", "active_filter": "Aktivt filter", "f_search": "Søk", "f_when": "Når", "f_chan": "Kanal", "f_descr": "inkl. beskrivelse", "f_cat": "Kategori", "w_now_long": "På nå", "hits": "treff", "watch_search": "Overvåk dette søket", "clear": "Tøm", "no_hits": "Ingen resultater.", "no_epg": " EPG-data er ikke hentet ennå.", "err": "Feil", "no_title": "(uten tittel)", "on_air": "● PÅ NÅ", "r_set": "✓ Påminnelse", "r_add": "Påminn", "watch_title": "Overvåk tittel", "watch_title_tip": "Overvåk alle programmer med denne tittelen", "no_epg_now": "Ingen EPG akkurat nå", "now_tag": "● NÅ", "watch_chan": "Overvåk kanal", "watch_new": "Overvåk nye", "watch_new_tip": "Varsle når en ny tittel med dette navnet dukker opp", "added": "lagt til", "show_more": "Vis mer", "left": "igjen", "write_kw_first": "Skriv inn et søkeord først", "kw_saved": "Søk lagret", "remove": "Fjern", "today": "I dag", "tomorrow": "I morgen", "yesterday": "I går", "rel_now": "nå", "rel_in": "om ", "rel_ago": " siden", "d_short": "d", "h_short": "t", "min_short": "min", "nt_push": "Push til mobilapp", "nt_plain": "Enkelt varsel (TV/andre)", "nt_persistent": "Vedvarende varsel i HA", "nt_tts": "Talemelding (TTS)", "nt_none": "Ingen varsel (kun kanalbytte/handlinger)", "nts_push": "Push", "nts_plain": "Enkel", "nts_persistent": "Vedvarende", "nts_tts": "Tale", "nts_none": "Ingen varsel", "wd0": "Man", "wd1": "Tir", "wd2": "Ons", "wd3": "Tor", "wd4": "Fre", "wd5": "Lør", "wd6": "Søn", "rep_once": "Én gang", "rep_daily": "Hver dag", "rep_weekdays": "Man–Fre", "rep_custom": "Valgte dager", "rep_txt_once": "Én gang {date} {time}", "rep_txt_daily": "Hver dag {time}", "rep_txt_weekdays": "Man–Fre {time}", "rep_txt_custom": "{days} {time}", "no_sched": "Ingen planlagte varsler.<br>Finn et program og trykk <b>🔔 Påminn</b>.", "no_rules": "Ingen regler eller tidspåminnelser. Bruk <b>🔔 Overvåk dette søket</b> eller <b>Overvåk tittel/kanal</b>.", "edit": "Rediger", "snoozed_lbl": "💤 Slumret", "cancel_snooze": "Avbryt slumring", "deleted": "Fjernet", "confirm_del": "Fjerne denne regelen?", "start_lbl": "start", "with_notice": "sammen med varselet", "at_start": "ved start", "rule_tag": "regel", "tune_to": "📺 → kanal {n}", "tune_saved": "(lagret)", "actions_n": "⚡ {n} handling(er)", "b_time": "⏰ Tid", "b_live": "Direkte", "b_movie": "Film", "b_series": "Serie", "meta_search": "Søk", "meta_chan": "Kanal", "meta_descr": "inkl. beskrivelse", "h_time": "Tidspåminnelse", "s_time": "Varsel, handlinger og/eller kanalbytte på et fast tidspunkt – uavhengig av EPG.", "h_prog": "Påminn om program", "h_title": "Overvåk programtittel", "s_title": "Varsler hver gang et program passer (alle kanaler med mindre du velger en).", "h_chan": "Overvåk kanal", "s_chan2": "Varsler for programmer på kanalen. Legg til søkeord for å begrense, ellers får du varsler for ALLE programmer.", "h_newt": "Overvåk nye titler", "s_newt": "Varsler når katalogen oppdateres og en ny tittel passer med søkeordet.", "h_newt2": "Varsler når nye titler som passer til søket legges til.", "h_chans": "Overvåk kanaler", "s_chans": "Kanalmønster fra søket.", "h_watch": "Overvåk søket", "s_watch": "Lager en regel som varsler for hvert program som passer fra nå av.", "h_edit": "Rediger påminnelse", "new_prefix": "Ny: ", "chan_prefix": "Kanal: ", "sec_what": "Hva som skal overvåkes", "sec_notify": "Varsel", "sec_tune": "📺 Kanalbytte på TV-boksen", "sec_actions": "⚡ Handlinger (tale, lyd, tjenester …)", "sec_cond": "Betingelser", "f_label_time": "Tekst i varselet", "f_label_time_ph": "f.eks. På tide med nyhetene", "f_label": "Navn (valgfritt, variabelen {label})", "f_at": "Tid", "f_repeat": "Gjenta", "f_date": "Dato", "f_date_ph": "ÅÅÅÅ-MM-DD", "f_weekdays": "Ukedager", "f_pat": "Søkeord i programtittel (jokertegn, komma, -ekskluder)", "f_pat_new": "Søkeord i tittel (jokertegn, komma, -ekskluder)", "f_chanpat": "Kanal (jokertegn, tom = alle kanaler)", "f_in_descr": "Søk også i programbeskrivelsen", "f_lead": "Minutter før start", "lead0": "ved start", "lead_n": "{n} min", "f_ntype": "Varseltype", "f_devs": "Send til enhet(er)", "d_none_nt": "Ingen varsel sendes – kun kanalbytte/handlinger.", "d_persistent": "Vises under varselklokken i Home Assistant – ingen enhet nødvendig.", "d_empty": "Ingen enheter funnet.", "f_title_tpl": "Tittel (egen tekst, tom = standard)", "f_msg_tpl": "Melding (egen tekst, tom = standard)", "title_ph": "📺 {title}", "msg_ph": "{status}", "f_buttons": "Knapper i mobilvarselet: Slumre og Bytt kanal", "f_snooze_min": "Slumring (minutter)", "f_only_home": "Bare hvis noen er hjemme (tale, lyd, kanalbytte)", "f_ignore_quiet": "Ignorer stille timer for denne påminnelsen", "ins_label": "Sett inn:", "ins_var": "{ } variabel…", "ins_ent": "Entitet…", "ins_state": "verdi", "ins_name": "navn", "ins_attr": "attributt", "ins_attr_ph": "attributt", "ins_btn": "Sett inn", "tune_on": "Bytt TV-boksen automatisk til kanalen", "tune_search_ph": "Søk etter kanal (valgfritt – eller skriv bare inn et kanalnummer)", "tune_num_ph": "Kanalnummer, f.eks. 11", "tune_rem_ph": "TV-boks, f.eks. remote.tv_box", "tune_when_start": "Bytt kanal ved programstart", "tune_when_notify": "Bytt kanal sammen med varselet", "tune_remember": "Husk kanalnummeret for denne kanalen", "tune_empty_hint": "Tomt nummer = bruk kanalnummeret som er lagret per kanal (Innstillinger).", "tune_pre": "Slå på først (valgfritt): entitet som slås på før kanalbyttet", "tune_pre_ph": "f.eks. switch.tv_plug eller remote.tv_box", "tune_pre_wait": "Vent (sek.)", "a_add": "Legg til handling:", "a_tts": "Les opp tekst", "a_sound": "Spill av lyd", "a_service": "Kall tjeneste", "a_set_entity": "Sett entitet", "a_none": "Ingen handlinger. Legg til tale, lyd, en tjeneste eller en entitet.", "a_when": "Når", "a_when_notify": "ved varselet", "a_when_start": "ved programstart", "a_test": "▶ Test", "a_text": "Tekst som skal leses opp", "a_text_ph": "f.eks. {title} starter om {minutes} minutter på {channel}. Det er {state:sensor.outdoor_temp} grader ute.", "a_players": "Spill av på mediespiller(e)", "a_volume": "Volum % (valgfritt)", "a_engine": "TTS-motor (tom = standard)", "a_lang": "Språk (tom = standard)", "a_src": "Kilde", "a_src_file": "Fil i HAs mediemappe", "a_src_url": "URL", "a_file_ph": "f.eks. ding.mp3  eller  sounds/ding.mp3", "a_url_ph": "https://example.com/sound.mp3", "a_file_hint": "Legg filen i HAs mediemappe (Innstillinger → System → Lagring → Media).", "a_svc": "Tjeneste (domain.service)", "a_svc_ex": "Eksempler…", "a_data": "Data (JSON) – variabler fungerer i tekstverdier", "a_ent": "Entitet", "a_val": "Verdi (on/off, tekst, tall – variabler fungerer)", "t_ok": "Ferdig", "t_sent": "Sendt", "test_sent": "Testvarsel sendt", "tune_sent": "Kanalbytte sendt", "rem_saved": "Påminnelse lagret", "chan_btn": "Bytt kanal", "tune_now_h": "📺 Bytt TV-boksen nå", "remember": "Husk", "remind_tune": "📺 Påminn + bytt kanal", "remind_more": "＋ Ny påminnelse til", "remind": "🔔 Påminn", "running_now": "på nå", "chan_word": "kanal", "no_num": "Ingen kanalnummer lagret", "time_chan_btn": "⏰ Tidsstyrt varsel / kanalbytte", "no_events": "Ingen hendelser ennå.", "when_col": "Når", "event_col": "Hendelse", "tune_title": "Manuelt bytte", "fav_on": "Favoritt", "err_tts_text": "Skriv inn teksten som skal leses opp.", "err_pick_player": "Velg minst én mediespiller.", "err_sound_value": "Skriv inn en fil eller URL for lyden.", "err_service_name": "Tjenesten må se ut som domain.service, f.eks. light.turn_on.", "err_service_json": "Data må være gyldig JSON (et objekt).", "err_entity_id": "Skriv inn en gyldig entitet, f.eks. switch.tv_plug.", "err_action_type": "Ukjent handlingstype.", "err_unknown_type": "Ukjent påminnelsestype.", "err_unknown_ntype": "Ukjent varseltype.", "err_number_digits": "Kanalnummeret kan bare inneholde sifre.", "err_bad_options": "Ugyldige alternativer.", "err_pick_device": "Velg minst én enhet å sende til.", "err_nothing_to_do": "Velg et varsel, et kanalbytte eller minst én handling.", "err_pick_remote": "Oppgi hvilken TV-boks (remote-entitet) som skal styres.", "err_need_number": "Skriv inn et kanalnummer.", "err_missing_program": "Programmet mangler kanal eller starttid.", "err_pattern_needed": "Skriv inn søkeord eller en kanal.", "err_time_invalid": "Ugyldig tid.", "err_date_invalid": "Ugyldig dato (ÅÅÅÅ-MM-DD).", "err_time_past": "Det tidspunktet har allerede passert.", "err_pick_weekday": "Velg minst én ukedag.", "err_not_found": "Ikke funnet.", "err_empty_keyword": "Skriv inn et søkeord først.", "err_internal": "Intern feil i tillegget – se loggen.", "v_title": "Programmets tittel", "v_channel": "Kanalens navn", "v_number": "Kanalnummer (hvis kjent)", "v_start": "Starttid, f.eks. 20:00", "v_end": "Sluttid", "v_date": "Dato, ÅÅÅÅ-MM-DD", "v_time": "Klokkeslett da påminnelsen sendes", "v_minutes": "Minutter til start", "v_status": "Ferdig tekst, f.eks. «Starter om 10 min på NRK1 (20:00)»", "v_label": "Ditt navn på påminnelsen", "v_lead": "Valgte minutter før start", "v_description": "Programbeskrivelse (første 200 tegn)", "v_category": "Programkategori", "v_reminder_id": "Påminnelsens id", "play_h": "Avspilling", "play_players": "Standardspillere (mediespillere)", "play_fmt": "Format", "play_fmt_hls": "HLS (.m3u8) – anbefalt", "play_fmt_ts": "MPEG-TS (.ts)", "play_ct": "Innholdstype", "play_ct_auto": "Auto (VLC → music, ellers etter format)", "play_hint": "Strømadressen bygges fra Xtream/M3U-kilden din og inneholder innloggingen. Den sendes til mediespilleren, men lagres aldri i påminnelser, historikk eller hendelser. Chromecast/Google TV: HLS. VLC: HLS. Kodi: valgfritt.", "a_play": "Spill kanal", "a_play_hint": "Spiller kanalen på valgt mediespiller (Chromecast, VLC, Kodi, Google TV …). Programmets kanal brukes; for tidspåminnelser brukes kanalnummeret under Kanalbytte. Regnes som lyd: stille timer og «bare hvis noen er hjemme» gjelder.", "play_btn_s": "▶ Spill av", "play_title": "Spill kanal", "play_dev": "Spill på enhet", "play_here": "🖥 Se her", "play_sent": "Avspilling sendt", "play_nodev": "Ingen mediespillere funnet – velg enhet eller se her.", "player_err": "Strømmen kunne ikke spilles i nettleseren. Prøv «Spill på enhet», eller sjekk at leverandøren tilbyr HLS (.m3u8).", "play_no_stream": "Kanalen har ingen strøm (krever Xtream eller M3U)", "season": "Sesong", "player_err_vod": "Filen kunne ikke spilles i nettleseren (f.eks. støttes ikke .mkv). Bruk «Spill på enhet»."}, "fi": {"app_name": "EPG-muistutukset", "refresh": "Päivitä", "refresh_tip": "Hae uusi EPG/luettelo nyt", "tab_main": "Yleiskatsaus", "tab_grid": "Opas", "tab_settings": "Asetukset", "tab_help": "Ohje", "k_live": "Live", "k_series": "Sarjat", "k_movie": "Elokuvat", "s_prog": "Ohjelmat", "s_chan": "Kanavat", "search": "Hae", "q_ph": "Hakusanat, esim.  jalkapallo, maali*, -naiset   (* ja ? ovat jokerimerkkejä)", "when": "Milloin", "w_now": "Nyt", "w_today": "Tänään", "w_tomorrow": "Huomenna", "w_week": "7 päivää", "w_all": "Kaikki", "chan_ph": "Kanava (jokeri), esim. YLE*", "in_descr": "Hae kuvauksesta", "favs": "Suosikit", "saved_kw": "Tallennetut haut", "save_search": "Tallenna haku", "none_saved": "– ei vielä tallennettuja", "search_hint": "Useita hakusanoja: erota pilkulla. Poista <code>-sana</code>. <code>*</code> = mikä tahansa teksti, <code>?</code> = yksi merkki. Jokerin kanssa koko otsikon on vastattava: <code>Uutiset*</code> = alkaa, <code>*loppuottelu*</code> = sisältää.", "scheduled": "Ajastettu", "time_rem": "Aikamuistutus", "rules_h": "Säännöt ja ajat", "now": "Nyt", "h2": "2 tuntia", "h3": "3 tuntia", "h6": "6 tuntia", "h12": "12 tuntia", "g_chan_ph": "Kanava (jokeri) esim. YLE*", "g_hl_ph": "Korosta ohjelmia esim. jalkapallo*", "g_hint": "Napsauta ohjelmaa muistutusta ja/tai kanavanvaihtoa varten. Napsauta kanavaa vaihtaaksesi nyt tai ajastaaksesi. ⭐ = suosikki. Punainen viiva = nyt, 🔔 = muistutus asetettu.", "status": "Tila", "def_h": "Uusien muistutusten oletukset", "lead_lbl": "Muistuta minuuttia ennen alkua", "ntype_lbl": "Ilmoitustyyppi", "devices_lbl": "Laitteet", "snooze_def": "Oletusuinutus (minuuttia)", "save_def": "Tallenna oletukset", "send_test": "Lähetä testi", "save": "Tallenna", "voice_h": "Puhe (TTS)", "tts_engine": "Oletus-TTS-moottori", "tts_lang": "Äänen kielikoodi (tyhjä = sama kuin käyttöliittymä)", "voice_hint": "Esimerkkimoottorit: tts.home_assistant_cloud (Nabu Casa), tts.google_translate_en_com. Puhe toistetaan toiminnolle valitulla mediasoittimella.", "quiet_h": "Hiljaiset tunnit ja kotona-ehto", "quiet_en": "Ota hiljaiset tunnit käyttöön (ei puhetta/ääntä)", "quiet_from": "Alkaen", "quiet_to": "Asti", "quiet_hint": "Koskee puhe- ja ääni-toimintoja. Ilmoitukset lähetetään normaalisti. Voidaan ohittaa muistutuskohtaisesti.", "home_lbl": "Henkilöt, jotka lasketaan „kotona“-tilaan", "home_hint": "Käytetään muistutuksen „Vain jos joku on kotona“ -ehdossa. Ei valintaa = aina.", "tv_h": "TV-boksi – automaattinen kanavanvaihto", "tv_entity": "Oletus-TV-boksi (remote-entiteetti)", "tv_delay": "Viive numeroiden välillä (s)", "tv_suffix": "Komento numeroiden jälkeen (valinnainen, esim. OK)", "tv_pre_ent": "Kytke TV ensin päälle – entiteetti (valinnainen)", "tv_pre_wait": "Odota (s)", "tv_test": "Testaa kanavanvaihto", "chmap_h": "Tallennetut kanavanumerot", "chmap_none": "Ei vielä – valitse „Muista kanavanumero“ muistutusta luodessasi.", "hist_h": "Viimeisimmät tapahtumat", "ha_h": "Home Assistant: entiteetit ja tapahtumat", "channel_ph": "Kanava", "close": "Sulje", "cancel": "Peruuta", "save_rem": "Tallenna muistutus", "saved_ok": "Tallennettu", "st_channels": "Kanavat", "st_programs": "Ohjelmat", "st_series": "Sarjat", "st_movies": "Elokuvat", "st_epg": "EPG päivitetty", "st_updating": "Päivitetään…", "st_errors": "virhettä", "st_never": "ei koskaan", "st_noconf": "EPG-osoitetta ei ole asetettu – syötä se lisäosan asetuksiin", "st_source": "Lähde", "st_xtream": "Xtream-rajapinta", "st_xtream_yes": "Kyllä (live, sarjat, elokuvat)", "st_xtream_no": "Ei (vain EPG/M3U)", "st_cp": "Kanavat / Ohjelmat", "st_sm": "Sarjat / Elokuvat", "st_catupd": "Luettelo päivitetty", "st_tz": "Aikavyöhyke", "st_ver": "Versio", "st_err": "Virheet", "kn_live_prog": "Live › Ohjelmat", "kn_live_chan": "Live › Kanavat", "kn_series": "Sarjat", "kn_movie": "Elokuvat", "all_cats": "Kaikki luokat", "active_filter": "Aktiivinen suodatin", "f_search": "Haku", "f_when": "Milloin", "f_chan": "Kanava", "f_descr": "kuvaus mukana", "f_cat": "Luokka", "w_now_long": "Menossa nyt", "hits": "osumaa", "watch_search": "Seuraa tätä hakua", "clear": "Tyhjennä", "no_hits": "Ei tuloksia.", "no_epg": " EPG-tietoja ei ole vielä haettu.", "err": "Virhe", "no_title": "(ei otsikkoa)", "on_air": "● LÄHETYKSESSÄ", "r_set": "✓ Muistutus", "r_add": "Muistuta", "watch_title": "Seuraa otsikkoa", "watch_title_tip": "Seuraa kaikkia ohjelmia, joilla on tämä otsikko", "no_epg_now": "Ei EPG:tä juuri nyt", "now_tag": "● NYT", "watch_chan": "Seuraa kanavaa", "watch_new": "Seuraa uusia", "watch_new_tip": "Ilmoita, kun tällä nimellä ilmestyy uusi nimike", "added": "lisätty", "show_more": "Näytä lisää", "left": "jäljellä", "write_kw_first": "Kirjoita ensin hakusana", "kw_saved": "Haku tallennettu", "remove": "Poista", "today": "Tänään", "tomorrow": "Huomenna", "yesterday": "Eilen", "rel_now": "nyt", "rel_in": "", "rel_ago": " sitten", "d_short": "pv", "h_short": "t", "min_short": "min", "nt_push": "Push mobiilisovellukseen", "nt_plain": "Yksinkertainen ilmoitus (TV/muu)", "nt_persistent": "Pysyvä ilmoitus HA:ssa", "nt_tts": "Puheviesti (TTS)", "nt_none": "Ei ilmoitusta (vain kanavanvaihto/toiminnot)", "nts_push": "Push", "nts_plain": "Yksinkertainen", "nts_persistent": "Pysyvä", "nts_tts": "Puhe", "nts_none": "Ei ilmoitusta", "wd0": "Ma", "wd1": "Ti", "wd2": "Ke", "wd3": "To", "wd4": "Pe", "wd5": "La", "wd6": "Su", "rep_once": "Kerran", "rep_daily": "Joka päivä", "rep_weekdays": "Ma–Pe", "rep_custom": "Valitut päivät", "rep_txt_once": "Kerran {date} {time}", "rep_txt_daily": "Joka päivä {time}", "rep_txt_weekdays": "Ma–Pe {time}", "rep_txt_custom": "{days} {time}", "no_sched": "Ei ajastettuja ilmoituksia.<br>Etsi ohjelma ja paina <b>🔔 Muistuta</b>.", "no_rules": "Ei sääntöjä tai aikamuistutuksia. Käytä <b>🔔 Seuraa tätä hakua</b> tai <b>Seuraa otsikkoa/kanavaa</b>.", "edit": "Muokkaa", "snoozed_lbl": "💤 Uinutettu", "cancel_snooze": "Peruuta uinutus", "deleted": "Poistettu", "confirm_del": "Poistetaanko tämä sääntö?", "start_lbl": "alku", "with_notice": "ilmoituksen mukana", "at_start": "alkaessa", "rule_tag": "sääntö", "tune_to": "📺 → kanava {n}", "tune_saved": "(tallennettu)", "actions_n": "⚡ {n} toiminto(a)", "b_time": "⏰ Aika", "b_live": "Live", "b_movie": "Elokuva", "b_series": "Sarja", "meta_search": "Haku", "meta_chan": "Kanava", "meta_descr": "kuvaus mukana", "h_time": "Aikamuistutus", "s_time": "Ilmoitus, toiminnot ja/tai kanavanvaihto tiettynä aikana – riippumaton EPG:stä.", "h_prog": "Muistuta ohjelmasta", "h_title": "Seuraa ohjelman otsikkoa", "s_title": "Ilmoittaa aina kun ohjelma täsmää (kaikki kanavat, ellet valitse yhtä).", "h_chan": "Seuraa kanavaa", "s_chan2": "Ilmoittaa kanavan ohjelmista. Rajaa hakusanoilla, muuten saat ilmoituksen KAIKISTA ohjelmista.", "h_newt": "Seuraa uusia nimikkeitä", "s_newt": "Ilmoittaa, kun luettelo päivittyy ja uusi nimike täsmää hakusanaan.", "h_newt2": "Ilmoittaa, kun hakuun täsmääviä uusia nimikkeitä lisätään.", "h_chans": "Seuraa kanavia", "s_chans": "Kanavakuvio haulta.", "h_watch": "Seuraa hakua", "s_watch": "Luo säännön, joka ilmoittaa jatkossa jokaisesta täsmäävästä ohjelmasta.", "h_edit": "Muokkaa muistutusta", "new_prefix": "Uusi:", "chan_prefix": "Kanava:", "sec_what": "Mitä seurataan", "sec_notify": "Ilmoitus", "sec_tune": "📺 Kanavanvaihto TV-boksilla", "sec_actions": "⚡ Toiminnot (puhe, ääni, palvelut …)", "sec_cond": "Ehdot", "f_label_time": "Ilmoituksen teksti", "f_label_time_ph": "esim. Uutisten aika", "f_label": "Nimi (valinnainen, muuttuja {label})", "f_at": "Aika", "f_repeat": "Toista", "f_date": "Päivämäärä", "f_date_ph": "VVVV-KK-PP", "f_weekdays": "Viikonpäivät", "f_pat": "Hakusanat ohjelman otsikossa (jokerit, pilkku, -poista)", "f_pat_new": "Hakusanat otsikossa (jokerit, pilkku, -poista)", "f_chanpat": "Kanava (jokeri, tyhjä = kaikki kanavat)", "f_in_descr": "Hae myös ohjelman kuvauksesta", "f_lead": "Muistuta minuuttia ennen alkua", "lead0": "alkaessa", "lead_n": "{n} min", "f_ntype": "Ilmoitustyyppi", "f_devs": "Lähetä laitteille", "d_none_nt": "Ilmoitusta ei lähetetä – vain kanavanvaihto/toiminnot.", "d_persistent": "Näkyy Home Assistantin ilmoituskellon alla – laitetta ei tarvita.", "d_empty": "Laitteita ei löytynyt.", "f_title_tpl": "Otsikko (oma teksti, tyhjä = oletus)", "f_msg_tpl": "Viesti (oma teksti, tyhjä = oletus)", "title_ph": "📺 {title}", "msg_ph": "{status}", "f_buttons": "Painikkeet mobiili-ilmoituksessa: Uinuta ja Vaihda kanava", "f_snooze_min": "Uinutus (minuuttia)", "f_only_home": "Vain jos joku on kotona (puhe, ääni, kanavanvaihto)", "f_ignore_quiet": "Ohita hiljaiset tunnit tälle muistutukselle", "ins_label": "Lisää:", "ins_var": "{ } muuttuja…", "ins_ent": "Entiteetti…", "ins_state": "arvo", "ins_name": "nimi", "ins_attr": "attribuutti", "ins_attr_ph": "attribuutti", "ins_btn": "Lisää", "tune_on": "Vaihda TV-boksi automaattisesti kanavalle", "tune_search_ph": "Hae kanavaa (valinnainen – tai syötä vain kanavanumero)", "tune_num_ph": "Kanavanumero, esim. 11", "tune_rem_ph": "TV-boksi, esim. remote.tv_box", "tune_when_start": "Vaihda kanava ohjelman alkaessa", "tune_when_notify": "Vaihda kanava ilmoituksen yhteydessä", "tune_remember": "Muista tämän kanavan numero", "tune_empty_hint": "Tyhjä numero = käytä kanavakohtaista tallennettua numeroa (Asetukset).", "tune_pre": "Kytke ensin päälle (valinnainen): entiteetti, joka kytketään ennen kanavanvaihtoa", "tune_pre_ph": "esim. switch.tv_plug tai remote.tv_box", "tune_pre_wait": "Odota (s)", "a_add": "Lisää toiminto:", "a_tts": "Lue teksti ääneen", "a_sound": "Toista ääni", "a_service": "Kutsu palvelua", "a_set_entity": "Aseta entiteetti", "a_none": "Ei toimintoja. Lisää puhe, ääni, palvelu tai entiteetti.", "a_when": "Milloin", "a_when_notify": "ilmoituksen yhteydessä", "a_when_start": "ohjelman alkaessa", "a_test": "▶ Testi", "a_text": "Ääneen luettava teksti", "a_text_ph": "esim. {title} alkaa {minutes} minuutin kuluttua kanavalla {channel}. Ulkona on {state:sensor.outdoor_temp} astetta.", "a_players": "Toista mediasoittimilla", "a_volume": "Äänenvoimakkuus % (valinnainen)", "a_engine": "TTS-moottori (tyhjä = oletus)", "a_lang": "Kieli (tyhjä = oletus)", "a_src": "Lähde", "a_src_file": "Tiedosto HA:n mediakansiossa", "a_src_url": "URL", "a_file_ph": "esim. ding.mp3  tai  sounds/ding.mp3", "a_url_ph": "https://example.com/sound.mp3", "a_file_hint": "Aseta tiedosto HA:n mediakansioon (Asetukset → Järjestelmä → Tallennustila → Media).", "a_svc": "Palvelu (domain.service)", "a_svc_ex": "Esimerkkejä…", "a_data": "Data (JSON) – muuttujat toimivat tekstiarvoissa", "a_ent": "Entiteetti", "a_val": "Arvo (on/off, teksti, luku – muuttujat toimivat)", "t_ok": "Valmis", "t_sent": "Lähetetty", "test_sent": "Testi-ilmoitus lähetetty", "tune_sent": "Kanavanvaihto lähetetty", "rem_saved": "Muistutus tallennettu", "chan_btn": "Vaihda kanava", "tune_now_h": "📺 Vaihda TV-boksi nyt", "remember": "Muista", "remind_tune": "📺 Muistuta + vaihda kanava", "remind_more": "＋ Toinen muistutus", "remind": "🔔 Muistuta", "running_now": "menossa nyt", "chan_word": "kanava", "no_num": "Kanavanumeroa ei ole tallennettu", "time_chan_btn": "⏰ Ajastettu ilmoitus / kanavanvaihto", "no_events": "Ei vielä tapahtumia.", "when_col": "Milloin", "event_col": "Tapahtuma", "tune_title": "Manuaalinen vaihto", "fav_on": "Suosikki", "err_tts_text": "Kirjoita ääneen luettava teksti.", "err_pick_player": "Valitse vähintään yksi mediasoitin.", "err_sound_value": "Anna äänen tiedosto tai URL.", "err_service_name": "Palvelun on oltava muotoa domain.service, esim. light.turn_on.", "err_service_json": "Datan on oltava kelvollista JSONia (objekti).", "err_entity_id": "Anna kelvollinen entiteetti, esim. switch.tv_plug.", "err_action_type": "Tuntematon toimintotyyppi.", "err_unknown_type": "Tuntematon muistutustyyppi.", "err_unknown_ntype": "Tuntematon ilmoitustyyppi.", "err_number_digits": "Kanavanumerossa saa olla vain numeroita.", "err_bad_options": "Virheelliset asetukset.", "err_pick_device": "Valitse vähintään yksi laite.", "err_nothing_to_do": "Valitse ilmoitus, kanavanvaihto tai vähintään yksi toiminto.", "err_pick_remote": "Anna ohjattava TV-boksi (remote-entiteetti).", "err_need_number": "Anna kanavanumero.", "err_missing_program": "Ohjelmalta puuttuu kanava tai alkuaika.", "err_pattern_needed": "Anna hakusanoja tai kanava.", "err_time_invalid": "Virheellinen aika.", "err_date_invalid": "Virheellinen päivämäärä (VVVV-KK-PP).", "err_time_past": "Tämä aika on jo mennyt.", "err_pick_weekday": "Valitse vähintään yksi viikonpäivä.", "err_not_found": "Ei löytynyt.", "err_empty_keyword": "Kirjoita ensin hakusana.", "err_internal": "Lisäosan sisäinen virhe – katso loki.", "v_title": "Ohjelman otsikko", "v_channel": "Kanavan nimi", "v_number": "Kanavanumero (jos tiedossa)", "v_start": "Alkuaika, esim. 20:00", "v_end": "Loppuaika", "v_date": "Päivämäärä, VVVV-KK-PP", "v_time": "Kellonaika, jolloin muistutus lähetetään", "v_minutes": "Minuuttia alkuun", "v_status": "Valmis teksti, esim. ”Alkaa 10 min kuluttua kanavalla Yle 1 (20:00)”", "v_label": "Oma nimesi muistutukselle", "v_lead": "Valitut minuutit ennen alkua", "v_description": "Ohjelman kuvaus (ensimmäiset 200 merkkiä)", "v_category": "Ohjelman luokka", "v_reminder_id": "Muistutuksen tunnus", "play_h": "Toisto", "play_players": "Oletussoittimet (mediasoittimet)", "play_fmt": "Muoto", "play_fmt_hls": "HLS (.m3u8) – suositus", "play_fmt_ts": "MPEG-TS (.ts)", "play_ct": "Sisältötyyppi", "play_ct_auto": "Auto (VLC → music, muuten muodon mukaan)", "play_hint": "Virran osoite muodostetaan Xtream/M3U-lähteestäsi ja sisältää kirjautumistiedot. Se lähetetään mediasoittimelle, mutta sitä ei koskaan tallenneta muistutuksiin, historiaan tai tapahtumiin. Chromecast/Google TV: HLS. VLC: HLS. Kodi: vapaa.", "a_play": "Toista kanava", "a_play_hint": "Toistaa kanavan valitulla mediasoittimella (Chromecast, VLC, Kodi, Google TV …). Käytetään ohjelman kanavaa; aikamuistutuksissa Kanavanvaihdon kanavanumeroa. Lasketaan ääneksi: hiljaiset tunnit ja „vain jos joku on kotona“ pätevät.", "play_btn_s": "▶ Toista", "play_title": "Toista kanava", "play_dev": "Toista laitteella", "play_here": "🖥 Katso tässä", "play_sent": "Toisto lähetetty", "play_nodev": "Mediasoittimia ei löytynyt – valitse laite tai katso tässä.", "player_err": "Virtaa ei voitu toistaa selaimessa. Kokeile ”Toista laitteella” tai tarkista, että palveluntarjoajasi tarjoaa HLS:ää (.m3u8).", "play_no_stream": "Kanavalla ei ole virtaa (vaatii Xtreamin tai M3U:n)", "season": "Kausi", "player_err_vod": "Tiedostoa ei voitu toistaa selaimessa (esim. .mkv ei ole tuettu). Käytä ”Toista laitteella”."}};
+Object.assign(LX.de,{vlc_here:"🎞 In VLC auf diesem Gerät öffnen",vlc_btn:"🎞 VLC",vlc_copy:"📋 Adresse kopieren",vlc_copied:"Adresse kopiert – in VLC einfügen (Strg+N / Netzwerkstream)",vlc_opened:"An VLC auf diesem Gerät gesendet",vlc_downloaded:"Playlist geladen – Datei mit VLC öffnen",vlc_hint:"Öffnet den Stream in VLC auf dem Gerät, das Sie gerade benutzen (Android, iPhone/iPad, Windows, Mac, Linux). Die Adresse enthält Ihre Anmeldedaten – nicht weitergeben.",vlc_err:"Kein Stream für diesen Kanal gefunden"});
+Object.assign(LX.fr,{vlc_here:"🎞 Ouvrir dans VLC sur cet appareil",vlc_btn:"🎞 VLC",vlc_copy:"📋 Copier l'adresse",vlc_copied:"Adresse copiée – collez-la dans VLC (Ctrl+N / flux réseau)",vlc_opened:"Envoyé à VLC sur cet appareil",vlc_downloaded:"Playlist téléchargée – ouvrez le fichier avec VLC",vlc_hint:"Ouvre le flux dans VLC sur l'appareil que vous utilisez (Android, iPhone/iPad, Windows, Mac, Linux). L'adresse contient vos identifiants – ne la partagez pas.",vlc_err:"Aucun flux trouvé pour cette chaîne"});
+Object.assign(LX.nb,{vlc_here:"🎞 Åpne i VLC på denne enheten",vlc_btn:"🎞 VLC",vlc_copy:"📋 Kopier adresse",vlc_copied:"Adresse kopiert – lim inn i VLC (Ctrl+N / nettverksstrøm)",vlc_opened:"Sendt til VLC på denne enheten",vlc_downloaded:"Spilleliste lastet ned – åpne filen med VLC",vlc_hint:"Åpner strømmen i VLC på enheten du bruker (Android, iPhone/iPad, Windows, Mac, Linux). Adressen inneholder påloggingen din – ikke del den.",vlc_err:"Fant ingen strøm for denne kanalen"});
+Object.assign(LX.fi,{vlc_here:"🎞 Avaa VLC:ssä tällä laitteella",vlc_btn:"🎞 VLC",vlc_copy:"📋 Kopioi osoite",vlc_copied:"Osoite kopioitu – liitä VLC:hen (Ctrl+N / verkkolähetys)",vlc_opened:"Lähetetty VLC:lle tällä laitteella",vlc_downloaded:"Soittolista ladattu – avaa tiedosto VLC:llä",vlc_hint:"Avaa lähetyksen VLC:ssä käyttämälläsi laitteella (Android, iPhone/iPad, Windows, Mac, Linux). Osoite sisältää tunnuksesi – älä jaa sitä.",vlc_err:"Kanavalle ei löytynyt lähetystä"});
+
+/* ---------- inbyggd hjälp / built-in help ---------- */
+function haInfoHtml(){
+  const sv=LANG==="sv";
+  return `<p style="margin:0 0 8px;color:var(--mute)">${sv?"Addonen skapar dessa entiteter i Home Assistant (uppdateras varje minut):":"The add-on creates these entities in Home Assistant (refreshed every minute):"}</p>
+  <table><tr><td><code>sensor.epg_next_reminder</code></td><td>${sv?"Nästa påminnelse (tidpunkt + titel, kanal, kanalnummer…)":"Next reminder (time + title, channel, channel number…)"}</td></tr>
+  <tr><td><code>sensor.epg_last_triggered</code></td><td>${sv?"Senast utlöst påminnelse":"Last triggered reminder"}</td></tr>
+  <tr><td><code>sensor.epg_active_reminders</code></td><td>${sv?"Antal aktiva påminnelser":"Number of active reminders"}</td></tr>
+  <tr><td><code>sensor.epg_last_channel_change</code></td><td>${sv?"Senaste kanalbyte (kanalnummer)":"Last channel change (channel number)"}</td></tr></table>
+  <p style="margin:10px 0 0;color:var(--mute)">${sv?"Events:":"Events:"} <code>iptv_epg_reminder</code>, <code>iptv_epg_tune</code>, <code>iptv_epg_new_titles</code> – ${sv?"se fliken Hjälp.":"see the Help tab."}</p>
+  <h4 style="margin:16px 0 6px">${sv?"🧩 Kort för andra dashboards":"🧩 Cards for other dashboards"}</h4>
+  <p style="margin:0 0 6px;color:var(--mute)">${sv?"Fem Lovelace-kort som läser sensorerna ovan (fungerar även via Nabu Casa):":"Five Lovelace cards that read the sensors above (they also work through Nabu Casa):"}</p>
+  <table><tr><td><code>custom:epg-next-card</code></td><td>${sv?"Nästa påminnelse":"Next reminder"}</td></tr>
+  <tr><td><code>custom:epg-upcoming-card</code></td><td>${sv?"Lista med kommande påminnelser (count: 5)":"List of upcoming reminders (count: 5)"}</td></tr>
+  <tr><td><code>custom:epg-now-card</code></td><td>${sv?"Just nu på favoritkanaler + knapp för kanalbyte":"On now on favorite channels + channel-change button"}</td></tr>
+  <tr><td><code>custom:epg-activity-card</code></td><td>${sv?"Senast utlöst + senaste kanalbyte":"Last triggered + last channel change"}</td></tr>
+  <tr><td><code>custom:epg-status-card</code></td><td>${sv?"Aktiva och schemalagda påminnelser":"Active and scheduled reminders"}</td></tr></table>
+  <ol style="margin:8px 0 0;padding-left:20px"><li><a href="epg-cards.js" download>⬇ epg-cards.js</a></li>
+  <li>${sv?"Kopiera filen till <code>/config/www/epg-cards.js</code> (mappen <code>www</code> skapas om den saknas).":"Copy the file to <code>/config/www/epg-cards.js</code> (create the <code>www</code> folder if missing)."}</li>
+  <li>${sv?"<b>Inställningar → Dashboards → ⋮ → Resurser</b> → lägg till <code>/local/epg-cards.js</code> som <i>JavaScript-modul</i> (kräver Avancerat läge). Ladda om sidan.":"<b>Settings → Dashboards → ⋮ → Resources</b> → add <code>/local/epg-cards.js</code> as <i>JavaScript module</i> (needs Advanced mode). Reload the page."}</li>
+  <li>${sv?"Lägg till kort: sök efter <b>EPG</b> i kortväljaren, eller använd YAML:":"Add cards: search for <b>EPG</b> in the card picker, or use YAML:"}</li></ol>
+  <pre style="margin:6px 0 0;overflow:auto">type: custom:epg-now-card
+max: 6
+tune: true      # ${sv?"knapp för kanalbyte":"channel-change button"}
+# entity: remote.tv_box   # ${sv?"valfritt, annars add-onens standard-TV-box":"optional, otherwise the add-on's default TV box"}
+# language: sv   # sv | en | de | fr | nb | fi</pre>`;
+}
+function helpHtml(){
+  const sv=LANG==="sv";
+  const vt=`<table><tr><th>${sv?"Variabel":"Variable"}</th>${sv?"<th>Svenskt alias</th>":""}<th>${sv?"Betydelse":"Meaning"}</th></tr>`+
+    VARS.map(v=>`<tr><td><code>{${v[0]}}</code></td>${sv?`<td><code>{${v[1]}}</code></td>`:""}<td>${esc(v[2][sv?0:1])}</td></tr>`).join("")+`</table>`;
+  const sections=sv?[
+  ["🚀 Kom igång",`
+   <ol><li>Ange din EPG-/IPTV-adress under <b>Inställningar → Add-ons → IPTV EPG Påminnelser → Konfiguration</b> (fältet <code>epg_url</code> eller <code>xtream_url</code>). Adressen sparas bara där och visas aldrig i dashboarden – bara värdnamnet.</li>
+   <li>Vänta tills <b>EPG uppdaterad</b> visas i toppen (första hämtningen kan ta en stund).</li>
+   <li>Sök under <b>Översikt</b> och tryck <b>🔔 Påminn</b> på ett program, eller öppna <b>Tablå</b> och klicka på ett program.</li>
+   <li>Välj notistyp och enhet. Klart – påminnelsen syns under <b>Schemalagt</b>.</li></ol>
+   <div class="tip">Ändra en påminnelse med <b>✎</b>, ta bort med <b>✕</b>. Regler och tidspåminnelser ligger under <b>Regler & tider</b> där du också kan slå av/på dem.</div>`],
+  ["🔎 Sök och wildcards",`
+   <p>Skriv ett eller flera sökord. Separera med komma (= ELLER). Uteslut med minustecken.</p>
+   <table><tr><td><code>fotboll</code></td><td>innehåller ordet fotboll</td></tr><tr><td><code>fotboll, tennis</code></td><td>fotboll ELLER tennis</td></tr>
+   <tr><td><code>fotboll, -damer</code></td><td>fotboll men inte om ”damer” förekommer (även i kanalnamn/kategori)</td></tr>
+   <tr><td><code>Rapport*</code></td><td>börjar med Rapport (med wildcard måste hela titeln matcha)</td></tr><tr><td><code>*final*</code></td><td>innehåller final</td></tr>
+   <tr><td><code>S?T</code></td><td>? = exakt ett tecken</td></tr></table>
+   <p><b>Live › Program</b> söker i programtitel (valfritt även beskrivning). <b>Live › Kanaler</b> söker kanalnamn. <b>Serier</b> och <b>Filmer</b> söker i katalogen. Spara sökningar med <b>＋ Spara sökning</b> och använd ⭐ för att bara se favoritkanaler.</p>`],
+  ["🔔 Typer av påminnelser",`
+   <h4>Programpåminnelse</h4><p>Ett enskilt program på en kanal. Skickas X minuter före start (och valfria åtgärder/kanalbyte vid start).</p>
+   <h4>Regel (bevaka)</h4><p>Skapas med <b>Bevaka sökningen</b>, <b>Bevaka titel</b> eller <b>Bevaka kanal</b>. Ger en påminnelse varje gång ett program matchar. Med sökord, kanalmönster och ”sök i beskrivning”. För serier/filmer ger regeln en notis när en <i>ny titel</i> som matchar läggs till i katalogen.</p>
+   <h4>Tidspåminnelse</h4><p>Vid ett klockslag – engång (med datum), varje dag, mån–fre eller valda veckodagar. Helt oberoende av EPG; kan också byta kanal och köra åtgärder.</p>`],
+  ["📱 Notiser och enheter",`
+   <ul><li><b>Push till mobilapp</b> – skickas till <code>notify.mobile_app_…</code>. Välj en eller flera telefoner.</li>
+   <li><b>Enkel notis</b> – till andra notify-tjänster (t.ex. Android TV-/Fire TV-notiser).</li>
+   <li><b>Persistent notis</b> – visas under klockan i Home Assistant.</li>
+   <li><b>Röstmeddelande (TTS)</b> – läses upp på valda mediaspelare med din TTS-motor.</li>
+   <li><b>Ingen notis</b> – bara kanalbyte och/eller åtgärder.</li></ul>
+   <h4>Knappar i mobilnotisen</h4><p>Med <b>Knappar i mobilnotisen</b> får push-notisen knapparna <b>Påminn om N min</b> (snooze) och <b>Byt till kanal N</b>. Tryck på knappen i telefonen så agerar addonen direkt. Snoozade påminnelser syns som 💤 under Schemalagt.</p>`],
+  ["✍️ Egen text och variabler",`
+   <p>Både <b>Rubrik</b> och <b>Meddelande</b> kan du skriva själv. Lämna tomt för standardtext. Under varje textfält finns <b>Infoga</b>: välj en variabel i listan, eller skriv/sök en entitet och infoga dess värde.</p>${vt}
+   <h4>Värden från Home Assistant</h4>
+   <table><tr><td><code>{state:sensor.temp_ute}</code></td><td>entitetens tillstånd (alias <code>{värde:…}</code>)</td></tr>
+   <tr><td><code>{attr:sensor.temp_ute:unit_of_measurement}</code></td><td>ett attribut (alias <code>{attribut:…}</code>)</td></tr>
+   <tr><td><code>{name:person.anna}</code></td><td>entitetens visningsnamn (alias <code>{namn:…}</code>)</td></tr></table>
+   <p>Exempel: <code>{title} börjar om {minutes} min på {channel}. Det är {state:sensor.temp_ute} grader ute.</code></p>
+   <div class="tip">Okända variabler lämnas orörda. Skriver du <code>{state:entity}</code> för en entitet som saknas blir resultatet tomt.</div>`],
+  ["⚡ Åtgärder (röst, ljud, tjänster)",`
+   <p>Under <b>Åtgärder</b> kan du lägga till hur många du vill. Varje åtgärd körs <b>vid notisen</b> eller <b>vid programstart</b> (tidspåminnelser: vid tidpunkten). Knappen <b>▶ Testa</b> kör åtgärden direkt.</p>
+   <h4>🗣️ Läs upp text</h4><p>Skriv texten (variabler fungerar), välj mediaspelare, och ev. volym, TTS-motor och språk. Standardmotor och språk sätter du under Inställningar → Röst. Nabu Casa-användare: <code>tts.home_assistant_cloud</code>.</p>
+   <h4>🔔 Spela ljud</h4><ul><li><b>Fil</b>: lägg en ljudfil i HA:s media-mapp (Inställningar → System → Lagring → Media) och skriv bara filnamnet, t.ex. <code>ding.mp3</code> eller <code>ljud/ding.mp3</code>.</li>
+   <li><b>URL</b>: valfri adress till en ljudfil som mediaspelaren kan nå, t.ex. <code>https://example.com/ding.mp3</code>.</li></ul>
+   <h4>🛠️ Anropa tjänst</h4><p>Vilken HA-tjänst som helst: skriv <code>domän.tjänst</code> och data som JSON. Variabler fungerar i textvärden. Välj <b>Exempel…</b> för färdiga mallar.</p>
+<pre>light.turn_on
+{"entity_id": "light.living_room", "brightness_pct": 80}
+
+notify.notify
+{"title": "{title}", "message": "{status}"}
+
+automation.trigger
+{"entity_id": "automation.my_automation"}</pre>
+   <h4>🎚️ Sätt entitet</h4><p>Slår på/av eller sätter ett värde: <code>on</code>/<code>off</code> för switch, input_boolean, light m.fl.; text för input_text; tal för input_number; alternativ för input_select. Andra entiteter får ett virtuellt tillstånd.</p>`],
+  ["📺 Kanalbyte på TV-boxen",`
+   <p>Slå på <b>Växla TV-boxen automatiskt</b>, ange kanalnummer och TV-box (en <code>remote.</code>-entitet). Addonen skickar siffrorna med <code>remote.send_command</code>, precis som en egen automation.</p>
+   <ul><li><b>Vid programstart</b> eller <b>samtidigt med notisen</b>.</li><li><b>Slå på först</b>: ange en entitet (t.ex. en smart plugg eller TV-boxens remote) som slås på, och hur många sekunder addonen ska vänta innan kanalen byts.</li>
+   <li><b>Kom ihåg kanalnumret</b> sparar numret per kanal, så nästa gång fylls det i automatiskt. Se och ändra under Inställningar → TV-box.</li>
+   <li>I <b>Tablån</b> kan du klicka på en kanal och byta kanal direkt, eller skapa en tidsstyrd växling.</li></ul>`],
+  ["🌙 Tysta timmar och hemma-villkor",`
+   <p>Under Inställningar → Tysta timmar slår du på ett tidsfönster (t.ex. 22:00–07:00) då <b>röst och ljud</b> hoppas över. Notiser skickas som vanligt. På en enskild påminnelse kan du välja <b>Ignorera tysta timmar</b>.</p>
+   <p><b>Bara om någon är hemma</b> hoppar över röst, ljud och kanalbyte när ingen av de valda personerna (<code>person.</code>-entiteter) är hemma.</p>`],
+  ["⭐ Favoriter och tablå",`
+   <p>Tablån visar kanaler vertikalt och tid horisontellt. Klicka ⭐ på en kanal för att göra den till favorit. Favoriter hamnar överst och kan filtreras med <b>⭐ Favoriter</b>. Klicka på ett program för påminnelse, på en kanal för snabbt kanalbyte. Gult streck + 🔔 = påminnelse finns, rött streck = nu. Fältet <b>Markera program</b> färgar träffar (t.ex. <code>fotboll*</code>).</p>`],
+  ["🏠 Entiteter, events och automationer",`
+   <p>Addonen skapar fyra sensorer (se Inställningar) och skickar events du kan använda i egna automationer. Sensorerna är virtuella och skapas om inom en minut efter omstart av Home Assistant.</p>
+   <h4>Event <code>iptv_epg_reminder</code></h4><p>Fält: <code>title, channel, number, start, end, date, time, minutes, label, lead, description, category, reminder_id, message, notification_title</code>.</p>
+<pre>trigger:
+  - platform: event
+    event_type: iptv_epg_reminder
+action:
+  - service: notify.notify
+    data:
+      message: "{{ trigger.event.data.title }} on {{ trigger.event.data.channel }}"</pre>
+   <h4>Event <code>iptv_epg_tune</code></h4><p>Skickas vid varje kanalbyte: <code>entity_id, channel_number, channel, program, reminder_id</code>.</p>
+   <h4>Event <code>iptv_epg_new_titles</code></h4><p>Skickas när bevakade nya filmer/serier hittas: <code>kind, titles, reminder_id</code>.</p>
+   <h4>Exempel: visa nästa påminnelse på ett kort</h4>
+<pre>type: entity
+entity: sensor.epg_next_reminder
+attribute: title</pre>`],
+  ["🌐 Språk",`<p>Växla mellan <b>SV</b> och <b>EN</b> uppe till höger. Valet gäller hela gränssnittet och även standardtexter i notiser, historik och sensorer. Standardspråk vid första start sätts i addonens Konfiguration (<code>language</code>), och röstspråk med <code>tts_language</code>.</p>`],
+  ["🔒 Integritet",`<ul><li>Din EPG-/IPTV-adress och inloggning finns bara i addonens Konfiguration. Dashboarden visar bara värdnamnet.</li>
+   <li>Lösenord och användarnamn maskas i loggar och felmeddelanden.</li><li>All data (EPG, påminnelser, historik) ligger lokalt i addonens egen databas i Home Assistant.</li>
+   <li>Addonen kontaktar bara din EPG-/IPTV-källa och din Home Assistant.</li></ul>`],
+  ["🛠️ Felsökning",`
+   <table><tr><td>”Fel vid hämtning av EPG”</td><td>Kontrollera adressen och att lösenordet inte är maskerat (••••). Skriv in det riktiga lösenordet i Konfiguration.</td></tr>
+   <tr><td>Inga enheter att välja</td><td>Mobilappen måste vara installerad och inloggad. Ladda om sidan efter att du lagt till enheter.</td></tr>
+   <tr><td>Röst/ljud hörs inte</td><td>Testa med <b>▶ Testa</b>. Kontrollera mediaspelare, TTS-motor, volym och tysta timmar. För URL-ljud: spelaren måste kunna nå adressen.</td></tr>
+   <tr><td>Kanalbyte fungerar inte</td><td>Testa under Inställningar → TV-box. Prova en längre fördröjning mellan siffror eller ett kommando efter siffrorna (t.ex. OK).</td></tr>
+   <tr><td>Knapparna i notisen gör inget</td><td>Kräver Companion-appen och att addonen har HA API-åtkomst (är aktiverat som standard).</td></tr>
+   <tr><td>Sensorer saknas efter omstart</td><td>De skapas om inom en minut.</td></tr></table>`]
+  ]:[
+  ["🚀 Getting started",`
+   <ol><li>Enter your EPG/IPTV address under <b>Settings → Add-ons → IPTV EPG Reminders → Configuration</b> (field <code>epg_url</code> or <code>xtream_url</code>). The address is only stored there and the dashboard only ever shows the host name.</li>
+   <li>Wait until <b>EPG updated</b> appears at the top (the first fetch can take a while).</li>
+   <li>Search under <b>Overview</b> and press <b>🔔 Remind</b> on a program, or open <b>Guide</b> and click a program.</li>
+   <li>Pick a notification type and device. Done – the reminder shows up under <b>Scheduled</b>.</li></ol>
+   <div class="tip">Edit a reminder with <b>✎</b>, delete with <b>✕</b>. Rules and time reminders are listed under <b>Rules & times</b> where you can also switch them on/off.</div>`],
+  ["🔎 Search and wildcards",`
+   <p>Type one or more keywords. Separate with commas (= OR). Exclude with a minus sign.</p>
+   <table><tr><td><code>football</code></td><td>contains the word football</td></tr><tr><td><code>football, tennis</code></td><td>football OR tennis</td></tr>
+   <tr><td><code>football, -women</code></td><td>football but not if “women” appears (also in channel name/category)</td></tr>
+   <tr><td><code>News*</code></td><td>starts with News (with a wildcard the whole title must match)</td></tr><tr><td><code>*final*</code></td><td>contains final</td></tr>
+   <tr><td><code>B?C</code></td><td>? = exactly one character</td></tr></table>
+   <p><b>Live › Programs</b> searches program titles (optionally descriptions). <b>Live › Channels</b> searches channel names. <b>Series</b> and <b>Movies</b> search the catalog. Save searches with <b>＋ Save search</b> and use ⭐ to see favorite channels only.</p>`],
+  ["🔔 Types of reminders",`
+   <h4>Program reminder</h4><p>One specific program on a channel. Sent X minutes before start (plus optional actions/channel change at start).</p>
+   <h4>Rule (watch)</h4><p>Created with <b>Watch this search</b>, <b>Watch title</b> or <b>Watch channel</b>. Gives a reminder every time a program matches, with keywords, channel pattern and “search description”. For series/movies the rule alerts when a <i>new title</i> matching the keywords is added to the catalog.</p>
+   <h4>Time reminder</h4><p>At a set time – once (with a date), every day, Mon–Fri or selected weekdays. Fully independent of the EPG; it can also change channel and run actions.</p>`],
+  ["📱 Notifications and devices",`
+   <ul><li><b>Push to mobile app</b> – sent to <code>notify.mobile_app_…</code>. Pick one or more phones.</li>
+   <li><b>Simple notification</b> – for other notify services (e.g. Android TV / Fire TV notifications).</li>
+   <li><b>Persistent notification</b> – shown under the bell in Home Assistant.</li>
+   <li><b>Voice message (TTS)</b> – read aloud on the chosen media players with your TTS engine.</li>
+   <li><b>No notification</b> – only channel change and/or actions.</li></ul>
+   <h4>Buttons in the mobile notification</h4><p>With <b>Buttons in the mobile notification</b> the push gets <b>Remind me in N min</b> (snooze) and <b>Change to channel N</b>. Tap the button on the phone and the add-on acts straight away. Snoozed reminders show as 💤 under Scheduled.</p>`],
+  ["✍️ Your own text and variables",`
+   <p>You can write both the <b>Title</b> and the <b>Message</b> yourself. Leave empty for the default text. Under each text field there is <b>Insert</b>: choose a variable from the list, or type/search an entity and insert its value.</p>${vt}
+   <h4>Values from Home Assistant</h4>
+   <table><tr><td><code>{state:sensor.outdoor_temp}</code></td><td>the entity's state</td></tr>
+   <tr><td><code>{attr:sensor.outdoor_temp:unit_of_measurement}</code></td><td>an attribute</td></tr>
+   <tr><td><code>{name:person.anna}</code></td><td>the entity's friendly name</td></tr></table>
+   <p>Example: <code>{title} starts in {minutes} min on {channel}. It is {state:sensor.outdoor_temp} degrees outside.</code></p>
+   <div class="tip">Unknown variables are left untouched. A <code>{state:entity}</code> for a missing entity becomes empty.</div>`],
+  ["⚡ Actions (voice, sound, services)",`
+   <p>Under <b>Actions</b> you can add as many as you like. Each runs <b>at the notice</b> or <b>at program start</b> (time reminders: at the set time). The <b>▶ Test</b> button runs the action right away.</p>
+   <h4>🗣️ Read text aloud</h4><p>Write the text (variables work), pick media players, and optionally volume, TTS engine and language. Set the default engine and language under Settings → Voice. Nabu Casa users: <code>tts.home_assistant_cloud</code>.</p>
+   <h4>🔔 Play sound</h4><ul><li><b>File</b>: put an audio file in HA's media folder (Settings → System → Storage → Media) and type just the file name, e.g. <code>ding.mp3</code> or <code>sounds/ding.mp3</code>.</li>
+   <li><b>URL</b>: any address of an audio file the media player can reach, e.g. <code>https://example.com/ding.mp3</code>.</li></ul>
+   <h4>🛠️ Call service</h4><p>Any HA service: type <code>domain.service</code> and data as JSON. Variables work in text values. Choose <b>Examples…</b> for ready-made templates.</p>
+<pre>light.turn_on
+{"entity_id": "light.living_room", "brightness_pct": 80}
+
+notify.notify
+{"title": "{title}", "message": "{status}"}
+
+automation.trigger
+{"entity_id": "automation.my_automation"}</pre>
+   <h4>🎚️ Set entity</h4><p>Turns on/off or sets a value: <code>on</code>/<code>off</code> for switch, input_boolean, light etc.; text for input_text; a number for input_number; an option for input_select. Other entities get a virtual state.</p>`],
+  ["📺 Channel change on the TV box",`
+   <p>Switch on <b>Switch the TV box automatically</b>, enter the channel number and TV box (a <code>remote.</code> entity). The add-on sends the digits with <code>remote.send_command</code>, just like your own automation would.</p>
+   <ul><li><b>At program start</b> or <b>together with the notice</b>.</li><li><b>Turn on first</b>: enter an entity (e.g. a smart plug or the TV box's remote) to switch on, and how many seconds to wait before changing channel.</li>
+   <li><b>Remember the channel number</b> stores the number per channel so it is pre-filled next time. View and edit under Settings → TV box.</li>
+   <li>In the <b>Guide</b> you can click a channel to change channel immediately, or create a timed switch.</li></ul>`],
+  ["🌙 Quiet hours and home condition",`
+   <p>Under Settings → Quiet hours you set a time window (e.g. 22:00–07:00) when <b>voice and sound</b> are skipped. Notifications are sent as usual. On a single reminder you can choose <b>Ignore quiet hours</b>.</p>
+   <p><b>Only if someone is home</b> skips voice, sound and channel change when none of the selected people (<code>person.</code> entities) are home.</p>`],
+  ["⭐ Favorites and the guide",`
+   <p>The guide shows channels vertically and time horizontally. Click ⭐ on a channel to make it a favorite. Favorites are sorted first and can be filtered with <b>⭐ Favorites</b>. Click a program for a reminder, a channel for a quick channel change. Amber bar + 🔔 = reminder exists, red line = now. The <b>Highlight programs</b> field marks matches (e.g. <code>football*</code>).</p>`],
+  ["🏠 Entities, events and automations",`
+   <p>The add-on creates four sensors (see Settings) and fires events you can use in your own automations. The sensors are virtual and are recreated within a minute after Home Assistant restarts.</p>
+   <h4>Event <code>iptv_epg_reminder</code></h4><p>Fields: <code>title, channel, number, start, end, date, time, minutes, label, lead, description, category, reminder_id, message, notification_title</code>.</p>
+<pre>trigger:
+  - platform: event
+    event_type: iptv_epg_reminder
+action:
+  - service: notify.notify
+    data:
+      message: "{{ trigger.event.data.title }} on {{ trigger.event.data.channel }}"</pre>
+   <h4>Event <code>iptv_epg_tune</code></h4><p>Fired on every channel change: <code>entity_id, channel_number, channel, program, reminder_id</code>.</p>
+   <h4>Event <code>iptv_epg_new_titles</code></h4><p>Fired when watched new movies/series are found: <code>kind, titles, reminder_id</code>.</p>
+   <h4>Example: show the next reminder on a card</h4>
+<pre>type: entity
+entity: sensor.epg_next_reminder
+attribute: title</pre>`],
+  ["🌐 Language",`<p>Switch between <b>SV</b> and <b>EN</b> at the top right. The choice applies to the whole interface and also to default notification texts, history and sensors. The initial language is set in the add-on Configuration (<code>language</code>), and the voice language with <code>tts_language</code>.</p>`],
+  ["🔒 Privacy",`<ul><li>Your EPG/IPTV address and login exist only in the add-on Configuration. The dashboard only shows the host name.</li>
+   <li>Usernames and passwords are masked in logs and error messages.</li><li>All data (EPG, reminders, history) is stored locally in the add-on's own database inside Home Assistant.</li>
+   <li>The add-on only contacts your EPG/IPTV source and your Home Assistant.</li></ul>`],
+  ["🛠️ Troubleshooting",`
+   <table><tr><td>“Error fetching EPG”</td><td>Check the address and that the password is not masked (••••). Enter the real password in Configuration.</td></tr>
+   <tr><td>No devices to choose</td><td>The mobile app must be installed and signed in. Reload the page after adding devices.</td></tr>
+   <tr><td>No voice/sound</td><td>Try <b>▶ Test</b>. Check the media player, TTS engine, volume and quiet hours. For URL sounds: the player must be able to reach the address.</td></tr>
+   <tr><td>Channel change does not work</td><td>Test under Settings → TV box. Try a longer delay between digits or a command after the digits (e.g. OK).</td></tr>
+   <tr><td>Notification buttons do nothing</td><td>Requires the Companion app and that the add-on has HA API access (enabled by default).</td></tr>
+   <tr><td>Sensors missing after restart</td><td>They are recreated within a minute.</td></tr></table>`]
+  ];
+  return sections.map((s,i)=>`<details class="hsec" ${i===0?"open":""}><summary>${s[0]}</summary><div class="hbody">${s[1]}</div></details>`).join("");
+}
+
+/* ---------- grund ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let LANG="sv";const LANGS=["sv","en","de","fr","nb","fi"];const LOC={sv:"sv-SE",en:"en-GB",de:"de-DE",fr:"fr-FR",nb:"nb-NO",fi:"fi-FI"};
+const t=(k,p)=>{const e=L[k];let s=e?(LANG==="sv"?e[0]:((LX[LANG]&&k in LX[LANG]?LX[LANG][k]:(e[1]||e[0])))):k;if(p)for(const x in p)s=s.split("{"+x+"}").join(p[x]);return s};
+const errText=m=>L[m]?t(m):String(m||"");
+const S={kind:"live",sub:"prog",q:"",when:"today",cat:"",chan:"",descr:false,fav:false,limit:100,offset:0};
+let ST={tz:"UTC"}, TG={notify:[],media_players:[],tts_entities:[],remotes:[],persons:[],types:["push","plain","persistent","tts","none"]},
+    DEF={lead:10,ntype:"push",targets:[],tune_entity:"",tune_delay:0.4,tune_suffix:"",tune_pre_entity:"",tune_pre_wait:8,snooze_min:10,
+         quiet_enabled:false,quiet_from:"22:00",quiet_to:"07:00",home_entities:[],tts_entity:"",tts_language:""},
+    SAVED=[], RES=null, CHMAP={};
+
+async function api(path,opt){
+  const r=await fetch("api/"+path,opt&&opt.body!==undefined?{method:opt.method||"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(opt.body)}:opt);
+  let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok)throw new Error((j&&j.error)||("HTTP "+r.status));
+  return j;
+}
+function toast(msg,cls){const el=$("#toast");el.textContent=msg;el.className="toast show "+(cls||"");clearTimeout(toast.h);toast.h=setTimeout(()=>el.className="toast",3600)}
+const fail=e=>toast(errText(e.message||e),"bad");
+const res=(r,okMsg)=>{ if(r.ok)toast(okMsg,"good"); else toast((r.errors||[]).map(errText).join("; ")||t("err"),"bad") };
+
+/* ---------- tid ---------- */
+const fmt=(ts,o)=>new Date(ts*1000).toLocaleString(LOC[LANG],{timeZone:ST.tz,...o});
+const hm=ts=>new Date(ts*1000).toLocaleTimeString("sv-SE",{timeZone:ST.tz,hour:"2-digit",minute:"2-digit"});
+const dkey=ts=>new Date(ts*1000).toLocaleDateString("sv-SE",{timeZone:ST.tz});
+function dayLabel(ts){
+  const now=Math.floor(Date.now()/1000);
+  if(dkey(ts)===dkey(now))return t("today");
+  if(dkey(ts)===dkey(now+86400))return t("tomorrow");
+  if(dkey(ts)===dkey(now-86400))return t("yesterday");
+  return fmt(ts,{weekday:"long",day:"numeric",month:"long"});
+}
+function rel(ts){
+  const d=ts-Math.floor(Date.now()/1000);
+  if(d<=60&&d>=-60)return t("rel_now");
+  const a=Math.abs(d),m=Math.round(a/60),h=Math.floor(m/60),dd=Math.floor(h/24);
+  const s=dd>=1?`${dd} ${t("d_short")} ${h%24} ${t("h_short")}`:h>=1?`${h} ${t("h_short")} ${m%60} ${t("min_short")}`:`${m} ${t("min_short")}`;
+  return d>0?t("rel_in")+s+(LANG==="fi"?" kuluttua":""):s+t("rel_ago");
+}
+const ntypeIcon={push:"📱",plain:"📺",persistent:"🔔",tts:"🔊",none:"⚡",tune:"📺"};
+const WD=()=>[0,1,2,3,4,5,6].map(i=>t("wd"+i));
+function repeatText(r){
+  if(r.days&&r.days.length){
+    const d=r.days;
+    if(d.length===7)return t("rep_txt_daily",{time:r.at_time});
+    if(d.length===5&&d.every((v,i)=>v===i))return t("rep_txt_weekdays",{time:r.at_time});
+    return t("rep_txt_custom",{days:d.map(i=>t("wd"+i)).join(" "),time:r.at_time});
+  }
+  return t("rep_txt_once",{date:r.start?dkey(r.start):"",time:r.at_time||""});
+}
+const tnames=a=>(a||[]).map(x=>x.replace(/^(notify\.|media_player\.)/,"").replace(/^mobile_app_/,"").replace(/_/g," "));
+const ntLabel=k=>t("nt_"+k);
+
+/* ---------- språk ---------- */
+function applyLang(){
+  document.documentElement.lang=LANG;document.title=t("app_name");
+  $$("[data-t]").forEach(e=>e.textContent=t(e.dataset.t));
+  $$("[data-ph]").forEach(e=>e.placeholder=t(e.dataset.ph));
+  $$("[data-title]").forEach(e=>e.title=t(e.dataset.title));
+  $("#searchHint").innerHTML=t("search_hint");
+  $$("#langSeg button").forEach(b=>b.classList.toggle("on",b.dataset.l===LANG));
+  $("#helpBox").innerHTML=helpHtml();
+}
+async function setLang(l){
+  if(l===LANG)return;
+  LANG=l;try{await api("lang",{body:{lang:l}})}catch(e){}
+  applyLang();await reloadAll();
+}
+async function reloadAll(){
+  renderStatus();await loadCats();syncControls();renderActive();if(RES)renderResults();renderSaved();
+  loadSchedule();loadRules();renderSettings();loadHist();if(G.inited){await initGridControls();loadGrid(true)}
+}
+
+/* ---------- status ---------- */
+async function loadStatus(){ST=await api("status");renderStatus()}
+function renderStatus(){
+  const age=ts=>ts?fmt(ts,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):t("st_never");
+  let h=`<span class="pill">${t("st_channels")} <b>${ST.channels}</b></span><span class="pill">${t("st_programs")} <b>${(ST.programs||0).toLocaleString(LOC[LANG])}</b></span>`;
+  if(ST.xtream)h+=`<span class="pill">${t("st_series")} <b>${ST.series}</b></span><span class="pill">${t("st_movies")} <b>${ST.movies}</b></span>`;
+  h+=`<span class="pill ${ST.epg_updated?"ok":""}">${t("st_epg")} <b>${age(ST.epg_updated)}</b></span>`;
+  if(ST.refreshing)h+=`<span class="pill"><span class="spin"></span> ${t("st_updating")}</span>`;
+  if(ST.errors&&ST.errors.length)h+=`<span class="pill err" title="${esc(ST.errors.join(" | "))}">⚠ ${ST.errors.length} ${t("st_errors")}</span>`;
+  if(!ST.configured)h+=`<span class="pill err">${t("st_noconf")}</span>`;
+  $("#status").innerHTML=h;
+  $("#statBox").innerHTML=`<table><tr><td>${t("st_source")}</td><td>${esc(ST.epg_host||"–")}</td></tr>
+  <tr><td>${t("st_xtream")}</td><td>${ST.xtream?t("st_xtream_yes"):t("st_xtream_no")}</td></tr>
+  <tr><td>${t("st_cp")}</td><td>${ST.channels} / ${(ST.programs||0).toLocaleString(LOC[LANG])}</td></tr>
+  <tr><td>${t("st_sm")}</td><td>${ST.series} / ${ST.movies}</td></tr>
+  <tr><td>${t("st_epg")}</td><td>${age(ST.epg_updated)}</td></tr>
+  <tr><td>${t("st_catupd")}</td><td>${age(ST.catalog_updated)}</td></tr>
+  <tr><td>${t("st_tz")}</td><td>${esc(ST.tz)}</td></tr><tr><td>${t("st_ver")}</td><td>${esc(ST.version)}</td></tr>
+  ${ST.errors&&ST.errors.length?`<tr><td>${t("st_err")}</td><td style="color:var(--bad)">${ST.errors.map(esc).join("<br>")}</td></tr>`:""}</table>`;
+}
+
+/* ---------- sök ---------- */
+const kindKey=()=>S.kind==="live"?(S.sub==="prog"?"live_prog":"live_chan"):S.kind;
+async function loadCats(){
+  const cats=await api("categories?kind="+S.kind);
+  $("#cat").innerHTML=`<option value="">${t("all_cats")}</option>`+cats.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+  $("#cat").value=S.cat;
+}
+function syncControls(){
+  $$("#kindSeg button").forEach(b=>b.classList.toggle("on",b.dataset.k===S.kind));
+  $$("#subSeg button").forEach(b=>b.classList.toggle("on",b.dataset.s===S.sub));
+  $("#subSeg").classList.toggle("hidden",S.kind!=="live");
+  const prog=kindKey()==="live_prog";
+  $("#whenBox").classList.toggle("hidden",!prog);$("#chan").classList.toggle("hidden",!prog);$("#descrBox").classList.toggle("hidden",!prog);
+  $("#favChip").classList.toggle("hidden",S.kind!=="live");$("#favChip").classList.toggle("on",S.fav);
+  $$("#whenBox .chip").forEach(b=>b.classList.toggle("on",b.dataset.w===S.when));
+  renderSaved();
+}
+function readControls(){S.q=$("#q").value.trim();S.cat=$("#cat").value;S.chan=$("#chan").value.trim();S.descr=$("#descr").checked}
+function renderActive(){
+  const k=kindKey(),tags=[`<span class="tag"><b>${t("kn_"+k)}</b></span>`];
+  if(S.q)tags.push(`<span class="tag">${t("f_search")}: <b>${esc(S.q)}</b></span>`);
+  if(k==="live_prog"){
+    tags.push(`<span class="tag">${t("f_when")}: <b>${t("w_"+(S.when==="now"?"now_long":S.when))}</b></span>`);
+    if(S.chan)tags.push(`<span class="tag">${t("f_chan")}: <b>${esc(S.chan)}</b></span>`);
+    if(S.descr)tags.push(`<span class="tag">${t("f_descr")}</span>`);
+  }
+  if(S.fav&&S.kind==="live")tags.push(`<span class="tag">⭐ ${t("favs")}</span>`);
+  if(S.cat)tags.push(`<span class="tag">${t("f_cat")}: <b>${esc($("#cat").selectedOptions[0]?.textContent||S.cat)}</b></span>`);
+  const n=RES?`<span class="tag"><b>${RES.total}</b> ${t("hits")}</span>`:"";
+  $("#active").innerHTML=`<span class="lbl">${t("active_filter")}</span>${tags.join("")}<span class="sp"></span>${n}`+
+    ((S.q||S.cat||S.chan)?`<button class="btn small" id="btnWatch">🔔 ${t("watch_search")}</button><button class="btn small" id="btnClear">${t("clear")}</button>`:"");
+  const w=$("#btnWatch");if(w)w.onclick=watchSearch;
+  const c=$("#btnClear");if(c)c.onclick=()=>{$("#q").value="";$("#cat").value="";$("#chan").value="";$("#descr").checked=false;runSearch()};
+}
+async function runSearch(more){
+  readControls();
+  if(!more)S.offset=0;
+  syncControls();
+  const p=new URLSearchParams({kind:kindKey(),q:S.q,cat:S.cat,when:S.when,channel:S.chan,descr:S.descr?"1":"0",fav:S.fav?"1":"0",limit:S.limit,offset:S.offset});
+  if(!more)$("#results").innerHTML=`<div class="empty"><span class="spin"></span></div>`;
+  try{
+    const r=await api("search?"+p);
+    if(more&&RES){RES.items=RES.items.concat(r.items);RES.total=r.total}else RES=r;
+    renderResults();
+  }catch(e){$("#results").innerHTML=`<div class="empty">${t("err")}: ${esc(errText(e.message))}</div>`}
+  renderActive();
+}
+function icoHtml(src,fallback,cls){return `<div class="ico ${cls||""}">${src?`<img loading="lazy" src="${esc(src)}" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('${fallback}'))">`:fallback}</div>`}
+function renderResults(){
+  const k=kindKey(), items=RES.items, el=$("#results");
+  if(!items.length){el.innerHTML=`<div class="empty">${t("no_hits")}${ST.programs?"":t("no_epg")}</div>`;return}
+  let h="",last="";const now=Math.floor(Date.now()/1000);
+  items.forEach((it,i)=>{
+    if(k==="live_prog"){
+      const d=dayLabel(it.start);if(d!==last){h+=`<div class="day">${esc(d)}</div>`;last=d}
+      const air=it.start<=now&&it.stop>now, pct=air?Math.round((now-it.start)/(it.stop-it.start)*100):0;
+      h+=`<div class="card">${icoHtml(it.icon,"📺")}<div class="body"><div class="title">${esc(it.title||t("no_title"))}</div>
+        <div class="meta">${air?`<span class="live">${t("on_air")}</span>`:""}<span class="t">${hm(it.start)}–${hm(it.stop)}</span> · ${esc(it.cname||it.channel_id)}${it.category?" · "+esc(it.category):""}</div>
+        ${it.descr?`<div class="desc">${esc(it.descr)}</div>`:""}${air?`<div class="bar"><i style="width:${pct}%"></i></div>`:""}</div>
+        <div class="actions">${it.has_reminder?`<button class="btn small done">${t("r_set")}</button>`:`<button class="btn small amber" data-act="prog" data-i="${i}">🔔 ${t("r_add")}</button>`}
+        <button class="btn small" data-act="title" data-i="${i}" title="${esc(t("watch_title_tip"))}">${t("watch_title")}</button>${it.playable?`<button class="btn small" data-act="play" data-i="${i}">${t("play_btn_s")}</button>`:""}</div></div>`;
+    }else if(k==="live_chan"){
+      h+=`<div class="card">${icoHtml(it.icon,"📡")}<div class="body"><div class="title">${esc(it.name)}${it.number?` <span class="gnum">${esc(it.number)}</span>`:""}</div>
+        <div class="meta">${it.now?`<span class="live">${t("now_tag")}</span><span class="t">${esc(it.now.title)}</span> · ${hm(it.now.start)}–${hm(it.now.stop)}`:t("no_epg_now")}</div></div>
+        <div class="actions"><button class="star ${it.fav?"on":""}" data-act="fav" data-i="${i}" title="${esc(t("fav_on"))}">⭐</button><button class="btn small amber" data-act="chan" data-i="${i}">🔔 ${t("watch_chan")}</button>${it.playable?`<button class="btn small" data-act="play" data-i="${i}">${t("play_btn_s")}</button>`:""}</div></div>`;
+    }else{
+      h+=`<div class="card">${icoHtml(it.cover,k==="movie"?"🎬":"📚","poster")}<div class="body"><div class="title">${esc(it.name)}</div>
+        <div class="meta">${[it.year,it.rating&&it.rating!=="0"?"★ "+it.rating:"",it.added?t("added")+" "+fmt(it.added,{day:"numeric",month:"short",year:"numeric"}):""].filter(Boolean).map(esc).join(" · ")}</div></div>
+        <div class="actions"><button class="btn small amber" data-act="newt" data-i="${i}" title="${esc(t("watch_new_tip"))}">🔔 ${t("watch_new")}</button><button class="btn small" data-act="vplay" data-i="${i}">${t("play_btn_s")}</button></div></div>`;
+    }
+  });
+  if(RES.total>items.length)h+=`<button class="btn more" id="btnMore">${t("show_more")} (${RES.total-items.length} ${t("left")})</button>`;
+  el.innerHTML=h;
+  $$("#results [data-act]").forEach(b=>b.onclick=()=>itemAction(b.dataset.act,items[+b.dataset.i],b));
+  const m=$("#btnMore");if(m)m.onclick=()=>{S.offset=RES.items.length;runSearch(true)};
+}
+function renderSaved(){
+  const k=kindKey(), list=SAVED.filter(s=>s.kind===k);
+  $("#saved").innerHTML=list.length?list.map(s=>`<span class="chip kw ${S.q===s.pattern?"on":""}" data-id="${s.id}"><span data-run="${esc(s.pattern)}">${esc(s.pattern)}</span><i title="${esc(t("remove"))}" data-del="${s.id}">✕</i></span>`).join(""):`<span class="lbl">${t("none_saved")}</span>`;
+  $$("#saved [data-run]").forEach(e=>e.onclick=()=>{$("#q").value=e.dataset.run;runSearch()});
+  $$("#saved [data-del]").forEach(e=>e.onclick=async()=>{await api("saved/"+e.dataset.del,{method:"DELETE"});await loadSaved()});
+}
+async function loadSaved(){SAVED=await api("saved");renderSaved()}
+
+/* ---------- variabler & entitetsväljare ---------- */
+const VARS=[
+ ["title","titel",["Programmets titel","Program title"]],["channel","kanal",["Kanalens namn","Channel name"]],["number","kanalnummer",["Kanalnummer (om känt)","Channel number (if known)"]],
+ ["start","starttid",["Starttid, t.ex. 20:00","Start time, e.g. 20:00"]],["end","slut",["Sluttid","End time"]],["date","datum",["Datum, ÅÅÅÅ-MM-DD","Date, YYYY-MM-DD"]],["time","tid",["Klockan när påminnelsen skickas","Time when the reminder is sent"]],
+ ["minutes","minuter",["Minuter kvar till start","Minutes until start"]],["status","status",["Färdig text, t.ex. ”Börjar om 10 min på SVT1 (20:00)”","Ready-made text, e.g. “Starts in 10 min on BBC1 (20:00)”"]],
+ ["label","etikett",["Ditt namn på påminnelsen","Your name for the reminder"]],["lead","lead",["Minuter före start som valts","Minutes-before setting"]],["description","beskrivning",["Programbeskrivning (första 200 tecken)","Program description (first 200 characters)"]],
+ ["category","kategori",["Programkategori","Program category"]],["reminder_id","reminder_id",["Påminnelsens id","Reminder id"]]];
+const ENT_KINDS=[["state","värde:","state"],["name","namn:","name"],["attr","attribut:","attribute"]];
+let LASTF=null;
+function varbarHtml(){
+  return `<div class="varbar"><span class="lbl">${t("ins_label")}</span>
+   <select class="varsel"><option value="">${esc(t("ins_var"))}</option>${VARS.map(v=>`<option value="${v[0]}">{${v[0]}} – ${esc((LX[LANG]&&LX[LANG]["v_"+v[0]])||v[2][LANG==="sv"?0:1])}</option>`).join("")}</select>
+   <input type="text" class="entq" list="entdl" placeholder="${esc(t("ins_ent"))}" autocomplete="off">
+   <select class="entkind"><option value="state">${t("ins_state")}</option><option value="name">${t("ins_name")}</option><option value="attr">${t("ins_attr")}</option></select>
+   <input type="text" class="attrq hidden" placeholder="${esc(t("ins_attr_ph"))}">
+   <button class="btn small entins" type="button">${t("ins_btn")}</button></div>`;
+}
+function insertAt(el,text){
+  if(!el)return;
+  const a=el.selectionStart??el.value.length,b=el.selectionEnd??a;
+  el.value=el.value.slice(0,a)+text+el.value.slice(b);
+  el.focus();const pos=a+text.length;try{el.setSelectionRange(pos,pos)}catch(e){}
+}
+function fieldTarget(node){const f=node.closest(".field");return f&&f.querySelector(".tpl-in")}
+let entTimer;
+function bindEntitySearch(root){
+  root.addEventListener("input",e=>{
+    if(!e.target.matches(".entq,.ent-in"))return;
+    clearTimeout(entTimer);entTimer=setTimeout(async()=>{
+      try{const l=await api("entities?q="+encodeURIComponent(e.target.value.trim()));
+        $("#entdl").innerHTML=l.map(x=>`<option value="${esc(x.id)}">${esc(x.name||"")} ${esc(x.state??"")}</option>`).join("")}catch(err){}},250)});
+  root.addEventListener("change",e=>{
+    if(e.target.matches(".varsel")){const v=e.target.value;if(v)insertAt(fieldTarget(e.target),"{"+v+"}");e.target.value=""}
+    if(e.target.matches(".entkind"))e.target.parentNode.querySelector(".attrq").classList.toggle("hidden",e.target.value!=="attr");
+  });
+  root.addEventListener("click",e=>{
+    const b=e.target.closest(".entins");if(!b)return;
+    const bar=b.parentNode,ent=bar.querySelector(".entq").value.trim(),kind=bar.querySelector(".entkind").value;
+    if(!ent)return;
+    const attr=bar.querySelector(".attrq").value.trim()||"attribute";
+    insertAt(fieldTarget(bar),kind==="attr"?`{attr:${ent}:${attr}}`:`{${kind}:${ent}}`);
+  });
+}
+
+/* ---------- påminnelse: editor ---------- */
+let R=null,M={};
+const SVC_EX=[["light.turn_on",'{"entity_id":"light.living_room","brightness_pct":80}'],["switch.turn_on",'{"entity_id":"switch.tv_plug"}'],
+ ["script.turn_on",'{"entity_id":"script.my_script"}'],["automation.trigger",'{"entity_id":"automation.my_automation"}'],
+ ["input_boolean.turn_on",'{"entity_id":"input_boolean.tv_alert"}'],["notify.notify",'{"title":"{title}","message":"{status}"}'],
+ ["media_player.volume_set",'{"entity_id":"media_player.kitchen","volume_level":0.5}'],["scene.turn_on",'{"entity_id":"scene.movie_night"}']];
+function newR(base){
+  const r={id:null,kind:"program",scope:"live",channel_id:null,start:null,stop:null,title:"",label:"",pattern:"",channel_pattern:"",in_descr:false,
+    lead:DEF.lead,ntype:DEF.ntype,targets:[...(DEF.targets||[])],tune:false,tune_entity:DEF.tune_entity||"",tune_number:"",tune_when:"start",
+    actions:[],opts:{},repeat:"once",date:dkey(Math.floor(Date.now()/1000)),at_time:"",days:[],remember:true};
+  if(DEF.tune_pre_entity)r.opts.pre={entity:DEF.tune_pre_entity,wait:DEF.tune_pre_wait};
+  return Object.assign(r,base||{});
+}
+function fromRem(x){
+  const r=newR({});Object.assign(r,x);
+  r.tune=!!x.tune;r.tune_entity=x.tune_entity||DEF.tune_entity||"";r.tune_number=x.tune_number||"";
+  r.opts=x.opts||{};r.actions=x.actions||[];r.targets=x.targets||[];r.pattern=x.pattern||"";r.channel_pattern=x.channel_pattern||"";
+  if(x.kind==="time"){
+    if(x.days&&x.days.length){const d=x.days;r.repeat=d.length===7?"daily":(d.length===5&&d.every((v,i)=>v===i))?"weekdays":"custom";r.days=d}
+    else{r.repeat="once";r.date=dkey(x.start)}
+  }
+  return r;
+}
+const sec=(title,inner,extra)=>`<div class="sec"><div class="sec-h"><span>${title}</span>${extra||""}</div>${inner}</div>`;
+const chosen=box=>[...box.querySelectorAll("input:checked")].map(i=>i.value);
+function devList(ntype){
+  if(ntype==="tts")return TG.media_players;
+  if(ntype==="persistent"||ntype==="none")return [];
+  return TG.notify;
+}
+function devsHtml(list,sel){return list.map(d=>`<label class="dev"><input type="checkbox" value="${esc(d.id)}" ${sel.includes(d.id)?"checked":""}>${esc(d.name)}</label>`).join("")}
+function renderDevs(box,ntype,sel){
+  const l=devList(ntype);
+  box.innerHTML=ntype==="none"?`<span class="lbl">${t("d_none_nt")}</span>`:ntype==="persistent"?`<span class="lbl">${t("d_persistent")}</span>`:
+    l.length?devsHtml(l,sel):`<span class="lbl">${t("d_empty")}</span>`;
+}
+function typeOptions(sel){return TG.types.map(k=>`<option value="${k}" ${k===sel?"selected":""}>${esc(ntLabel(k))}</option>`).join("")}
+function timeFields(){
+  return `<div class="field"><label>${t("f_label_time")}</label><input type="text" id="fLabel" class="tpl-in" placeholder="${esc(t("f_label_time_ph"))}" value="${esc(R.label)}"></div>
+   <div class="row" style="gap:10px;align-items:flex-end"><div class="field" style="width:140px"><label>${t("f_at")}</label><input type="time" id="fAt" value="${esc(R.at_time)}"></div>
+     <div class="field" style="flex:1"><label>${t("f_repeat")}</label><select id="fRep">${["once","daily","weekdays","custom"].map(k=>`<option value="${k}" ${R.repeat===k?"selected":""}>${t("rep_"+k)}</option>`).join("")}</select></div></div>
+   <div class="field ${R.repeat==="once"?"":"hidden"}" id="repOnce"><label>${t("f_date")}</label><input type="text" id="fDate" value="${esc(R.date)}" placeholder="${esc(t("f_date_ph"))}"></div>
+   <div class="field ${R.repeat==="custom"?"":"hidden"}" id="repDays"><label>${t("f_weekdays")}</label><div class="devs">${WD().map((d,i)=>`<label class="dev"><input type="checkbox" data-wd="${i}" ${R.days.includes(i)?"checked":""}> ${d}</label>`).join("")}</div></div>`;
+}
+function ruleFields(){
+  const nt=R.scope!=="live";
+  return `<div class="field"><label>${nt?t("f_pat_new"):t("f_pat")}</label><input type="text" id="fPat" value="${esc(R.pattern)}"></div>
+   ${R.scope==="live"?`<div class="field"><label>${t("f_chanpat")}</label><input type="text" id="fChan" value="${esc(R.channel_pattern)}"></div>
+   <label class="chk"><input type="checkbox" id="fDescr" ${R.in_descr?"checked":""}> ${t("f_in_descr")}</label>`:""}`;
+}
+function notifyHtml(){
+  const o=R.opts,live=R.scope==="live",time=R.kind==="time";
+  return `${live&&!time?`<div class="field"><label>${t("f_lead")}</label><div class="row"><input type="number" id="fLead" min="0" max="1440" value="${R.lead}" style="width:100px">
+     ${[0,5,10,30,60].map(n=>`<button class="chip" type="button" data-lead="${n}">${n===0?t("lead0"):t("lead_n",{n})}</button>`).join("")}</div></div>`:""}
+   <div class="field"><label>${t("f_ntype")}</label><select id="fType">${typeOptions(R.ntype)}</select></div>
+   <div class="field"><label>${t("f_devs")}</label><div class="devs" id="fDevs"></div></div>
+   <div class="field"><label>${t("f_title_tpl")}</label><input type="text" id="fTitleTpl" class="tpl-in" placeholder="${esc(t("title_ph"))}" value="${esc(o.title_tpl||"")}">${varbarHtml()}</div>
+   <div class="field"><label>${t("f_msg_tpl")}</label><input type="text" id="fMsgTpl" class="tpl-in" placeholder="${esc(t("msg_ph"))}" value="${esc(o.msg_tpl||"")}">${varbarHtml()}</div>
+   <div id="pushOpts" class="${R.ntype==="push"?"":"hidden"}"><label class="chk"><input type="checkbox" id="fButtons" ${o.buttons?"checked":""}> ${t("f_buttons")}</label>
+     <div class="row" style="margin-top:8px"><span class="lbl">${t("f_snooze_min")}</span><input type="number" id="fSnooze" min="1" max="240" value="${o.snooze_min||DEF.snooze_min||10}" style="width:90px"></div></div>`;
+}
+function tuneHtml(){
+  const time=R.kind==="time",o=R.opts,pre=o.pre||{};
+  const num=R.tune_number||(R.channel_id&&CHMAP[R.channel_id])||"";
+  return `<label class="chk"><input type="checkbox" id="fTune" ${R.tune?"checked":""}> ${t("tune_on")}</label>
+   <div id="tuneBox" class="stack ${R.tune?"":"hidden"}" style="gap:10px">
+     ${time?`<div style="position:relative"><input type="text" id="fChSearch" placeholder="${esc(t("tune_search_ph"))}" autocomplete="off" style="width:100%" value="${esc(M.chName||"")}"><div class="pickres" id="chRes"></div></div>`:""}
+     <div class="row"><input type="text" id="fNum" inputmode="numeric" placeholder="${esc(t("tune_num_ph"))}" style="width:170px" value="${esc(num)}">
+       <input type="text" id="fRem" list="remList" placeholder="${esc(t("tune_rem_ph"))}" style="flex:1" value="${esc(R.tune_entity)}"></div>
+     <datalist id="remList">${TG.remotes.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("")}</datalist>
+     ${time?"":`<select id="fTuneWhen"><option value="start" ${R.tune_when==="start"?"selected":""}>${t("tune_when_start")}</option><option value="notify" ${R.tune_when==="notify"?"selected":""}>${t("tune_when_notify")}</option></select>`}
+     <div class="field"><label>${t("tune_pre")}</label><div class="row"><input type="text" id="fPre" class="ent-in" list="entdl" placeholder="${esc(t("tune_pre_ph"))}" style="flex:1" value="${esc(pre.entity||"")}">
+       <input type="number" id="fPreWait" min="0" max="60" value="${pre.wait??DEF.tune_pre_wait??8}" style="width:80px" title="${esc(t("tune_pre_wait"))}"></div></div>
+     ${(R.channel_id||time)?`<label class="chk"><input type="checkbox" id="fRemember" ${R.remember?"checked":""}> ${t("tune_remember")}</label>`:`<span class="lbl">${t("tune_empty_hint")}</span>`}
+   </div>`;
+}
+const CTS=["auto","application/x-mpegURL","video/mp2t","video","music"];
+function actionHtml(a,i){
+  const live=R.scope==="live"&&R.kind!=="time";
+  const icon={tts:"🗣️",sound:"🔔",play:"▶️",service:"🛠️",set_entity:"🎚️"}[a.type];
+  const whenSel=live?`<select class="a-when"><option value="notify" ${a.when!=="start"?"selected":""}>${t("a_when_notify")}</option><option value="start" ${a.when==="start"?"selected":""}>${t("a_when_start")}</option></select>`:"";
+  let b="";
+  const players=`<div class="field"><label>${t("a_players")}</label><div class="devs a-players">${TG.media_players.length?devsHtml(TG.media_players,a.targets||[]):`<span class="lbl">${t("d_empty")}</span>`}</div></div>`;
+  const vol=`<div class="field" style="width:150px"><label>${t("a_volume")}</label><input type="number" class="a-vol" min="0" max="100" value="${a.volume??""}"></div>`;
+  if(a.type==="tts"){
+    b=`<div class="field"><label>${t("a_text")}</label><textarea class="a-text tpl-in" rows="3" placeholder="${esc(t("a_text_ph"))}">${esc(a.text||"")}</textarea>${varbarHtml()}</div>${players}
+       <div class="row"><div class="field" style="flex:1"><label>${t("a_engine")}</label><select class="a-eng"><option value="">–</option>${TG.tts_entities.map(e=>`<option value="${esc(e.id)}" ${a.tts_entity===e.id?"selected":""}>${esc(e.name)} (${esc(e.id)})</option>`).join("")}</select></div>
+       <div class="field" style="width:130px"><label>${t("a_lang")}</label><input type="text" class="a-lang" value="${esc(a.language||"")}"></div>${vol}</div>`;
+  }else if(a.type==="sound"){
+    const file=a.source!=="url";
+    b=`<div class="row"><div class="field" style="width:230px"><label>${t("a_src")}</label><select class="a-src"><option value="file" ${file?"selected":""}>${t("a_src_file")}</option><option value="url" ${file?"":"selected"}>${t("a_src_url")}</option></select></div>
+       <div class="field" style="flex:1"><label>&nbsp;</label><input type="text" class="a-val tpl-in" value="${esc(a.value||"")}" placeholder="${esc(file?t("a_file_ph"):t("a_url_ph"))}"></div></div>
+       <div class="sub">${t("a_file_hint")}</div>${players}<div class="row">${vol}</div>`;
+  }else if(a.type==="play"){
+    b=`<div class="sub">${t("a_play_hint")}</div>${players}
+       <div class="row"><div class="field" style="flex:1"><label>${t("play_fmt")}</label><select class="a-fmt"><option value="hls" ${a.fmt!=="ts"?"selected":""}>${t("play_fmt_hls")}</option><option value="ts" ${a.fmt==="ts"?"selected":""}>${t("play_fmt_ts")}</option></select></div>
+       <div class="field" style="flex:1"><label>${t("play_ct")}</label><select class="a-ct">${CTS.map(c=>`<option value="${c}" ${(a.content_type||"auto")===c?"selected":""}>${c==="auto"?esc(t("play_ct_auto")):c}</option>`).join("")}</select></div>${vol}</div>`;
+  }else if(a.type==="service"){
+    b=`<div class="row"><div class="field" style="flex:1;min-width:200px"><label>${t("a_svc")}</label><input type="text" class="a-svc" value="${esc(a.service||"")}" placeholder="light.turn_on"></div>
+       <div class="field" style="width:200px"><label>${t("a_svc_ex")}</label><select class="a-ex"><option value="">–</option>${SVC_EX.map((x,j)=>`<option value="${j}">${esc(x[0])}</option>`).join("")}</select></div></div>
+       <div class="field"><label>${t("a_data")}</label><textarea class="a-data tpl-in" rows="4" spellcheck="false">${esc(a.data||"{}")}</textarea>${varbarHtml()}</div>`;
+  }else{
+    b=`<div class="field"><label>${t("a_ent")}</label><input type="text" class="a-ent ent-in" list="entdl" value="${esc(a.entity_id||"")}" placeholder="input_boolean.tv_alert"></div>
+       <div class="field"><label>${t("a_val")}</label><input type="text" class="a-sval tpl-in" value="${esc(a.value??"on")}">${varbarHtml()}</div>`;
+  }
+  return `<div class="acard" data-i="${i}" data-type="${a.type}"><div class="ahead"><b>${icon} ${t("a_"+a.type)}</b><span class="sp"></span>${whenSel}
+    ${a.type==="play"?"":`<button class="btn small" type="button" data-atest>${t("a_test")}</button>`}<button class="btn small danger" type="button" data-adel>✕</button></div>${b}</div>`;
+}
+function actionsHtml(){
+  return `<div id="actList" class="stack" style="gap:10px">${R.actions.length?R.actions.map(actionHtml).join(""):`<span class="lbl">${t("a_none")}</span>`}</div>
+   <div class="addrow"><span class="lbl" style="align-self:center">${t("a_add")}</span>${["tts","sound","play","service","set_entity"].map(k=>`<button class="btn small" type="button" data-aadd="${k}">＋ ${t("a_"+k)}</button>`).join("")}</div>`;
+}
+function condHtml(){
+  const o=R.opts;
+  return `<label class="chk"><input type="checkbox" id="fHome" ${o.only_home?"checked":""}> ${t("f_only_home")}</label>
+   <label class="chk"><input type="checkbox" id="fIgnQ" ${o.ignore_quiet?"checked":""}> ${t("f_ignore_quiet")}</label>`;
+}
+function renderEditor(){
+  const live=R.scope==="live",time=R.kind==="time",rule=R.kind==="rule";
+  let h="";
+  if(time)h+=timeFields();
+  else{
+    h+=`<div class="field"><label>${t("f_label")}</label><input type="text" id="fLabel" value="${esc(R.label)}"></div>`;
+    if(rule)h+=ruleFields();
+  }
+  h+=sec(t("sec_notify"),notifyHtml());
+  if(live)h+=sec(t("sec_tune"),tuneHtml());
+  h+=sec(t("sec_actions"),actionsHtml());
+  if(live)h+=sec(t("sec_cond"),condHtml());
+  $("#mBody").innerHTML=h;
+  renderDevs($("#fDevs"),R.ntype,R.targets);
+}
+function readActions(){
+  return $$("#actList .acard").map(c=>{
+    const type=c.dataset.type,q=s=>c.querySelector(s),when=q(".a-when")?q(".a-when").value:"notify";
+    const pl=q(".a-players")?chosen(q(".a-players")):[];
+    if(type==="tts")return {type,when,text:q(".a-text").value,targets:pl,tts_entity:q(".a-eng").value,language:q(".a-lang").value.trim(),volume:q(".a-vol").value};
+    if(type==="sound")return {type,when,source:q(".a-src").value,value:q(".a-val").value.trim(),targets:pl,volume:q(".a-vol").value};
+    if(type==="play")return {type,when,targets:pl,fmt:q(".a-fmt").value,content_type:q(".a-ct").value,volume:q(".a-vol").value};
+    if(type==="service")return {type,when,service:q(".a-svc").value.trim(),data:q(".a-data").value};
+    return {type,when,entity_id:q(".a-ent").value.trim(),value:q(".a-sval").value};
+  });
+}
+function readForm(){
+  const g=id=>document.getElementById(id);
+  if(R.kind==="time"){R.label=g("fLabel").value.trim();R.at_time=g("fAt").value;R.repeat=g("fRep").value;R.date=g("fDate").value.trim();R.days=$$("#repDays input:checked").map(i=>+i.dataset.wd)}
+  else{R.label=g("fLabel").value.trim()}
+  if(R.kind==="rule"){R.pattern=g("fPat").value.trim();if(g("fChan"))R.channel_pattern=g("fChan").value.trim();if(g("fDescr"))R.in_descr=g("fDescr").checked}
+  if(g("fLead"))R.lead=+g("fLead").value||0;
+  R.ntype=g("fType").value;R.targets=chosen(g("fDevs"));
+  const o={};
+  o.title_tpl=g("fTitleTpl").value.trim();o.msg_tpl=g("fMsgTpl").value.trim();
+  if(g("fButtons")){o.buttons=g("fButtons").checked;o.snooze_min=+g("fSnooze").value||0}
+  if(g("fHome"))o.only_home=g("fHome").checked;
+  if(g("fIgnQ"))o.ignore_quiet=g("fIgnQ").checked;
+  if(g("fTune")){
+    R.tune=g("fTune").checked;R.tune_number=g("fNum").value.trim();R.tune_entity=g("fRem").value.trim();
+    R.tune_when=g("fTuneWhen")?g("fTuneWhen").value:"start";R.remember=g("fRemember")?g("fRemember").checked:false;
+    if(g("fPre").value.trim())o.pre={entity:g("fPre").value.trim(),wait:+g("fPreWait").value||0};
+  }
+  R.opts=o;R.actions=readActions();
+}
+function payload(){
+  readForm();
+  const o={...R.opts};Object.keys(o).forEach(k=>{if(o[k]===""||o[k]===false||o[k]===0)delete o[k]});
+  return {kind:R.kind,scope:R.scope,channel_id:R.channel_id,start:R.start,stop:R.stop,title:R.title,label:R.label,pattern:R.pattern,channel_pattern:R.channel_pattern,
+    in_descr:R.in_descr,lead:R.lead,ntype:R.ntype,targets:R.targets,tune:R.tune,tune_entity:R.tune_entity,tune_number:R.tune_number,tune_when:R.tune_when,
+    remember_number:R.remember,actions:R.actions,opts:o,at_time:R.at_time,repeat:R.repeat,date:R.date,days:R.days};
+}
+function openEditor(cfg){
+  M=cfg;R=cfg.rem||newR(cfg.base);
+  if(cfg.preTune&&!R.id)R.tune=true;
+  if(!R.id&&R.kind==="program"&&R.channel_id&&CHMAP[R.channel_id]&&DEF.tune_entity)R.tune=true;
+  $("#mTitle").textContent=cfg.heading;$("#mSub").textContent=cfg.sub||"";
+  renderEditor();$("#modal").showModal();
+}
+function bindEditor(){
+  const body=$("#mBody");
+  bindEntitySearch(document.body);
+  body.addEventListener("focusin",e=>{if(e.target.matches(".tpl-in"))LASTF=e.target});
+  body.addEventListener("click",e=>{
+    const lead=e.target.closest("[data-lead]");if(lead){$("#fLead").value=lead.dataset.lead;return}
+    const add=e.target.closest("[data-aadd]");
+    if(add){readForm();const type=add.dataset.aadd;
+      const a={type,when:"notify"};
+      if(type==="tts"){a.text=({sv:"{title} börjar om {minutes} minuter på {channel}",de:"{title} beginnt in {minutes} Minuten auf {channel}",fr:"{title} commence dans {minutes} minutes sur {channel}",nb:"{title} starter om {minutes} minutter på {channel}",fi:"{title} alkaa {minutes} minuutin kuluttua kanavalla {channel}"})[LANG]||"{title} starts in {minutes} minutes on {channel}";a.targets=[]}
+      if(type==="sound"){a.source="file";a.value="";a.targets=[]}
+      if(type==="play"){a.when="start";a.targets=[...(DEF.play_entities||[])];a.fmt=DEF.play_fmt||"hls";a.content_type=DEF.play_ctype||"auto"}
+      if(type==="service"){a.service="";a.data="{}"}
+      if(type==="set_entity"){a.entity_id="";a.value="on"}
+      R.actions.push(a);renderEditor();return}
+    const del=e.target.closest("[data-adel]");
+    if(del){readForm();R.actions.splice(+del.closest(".acard").dataset.i,1);renderEditor();return}
+    const tst=e.target.closest("[data-atest]");
+    if(tst){const a=readActions()[+tst.closest(".acard").dataset.i];
+      api("test_action",{body:{action:a}}).then(r=>res(r,r.detail?`${t("t_ok")}: ${r.detail}`:t("t_ok"))).catch(fail);return}
+  });
+  body.addEventListener("change",e=>{
+    if(e.target.id==="fType"){readForm();
+      const l=devList(R.ntype).map(x=>x.id);let sel=R.targets.filter(x=>l.includes(x));if(!sel.length)sel=(DEF.targets||[]).filter(x=>l.includes(x));
+      R.targets=sel;renderDevs($("#fDevs"),R.ntype,sel);$("#pushOpts").classList.toggle("hidden",R.ntype!=="push")}
+    if(e.target.id==="fTune")$("#tuneBox").classList.toggle("hidden",!e.target.checked);
+    if(e.target.id==="fRep"){$("#repOnce").classList.toggle("hidden",e.target.value!=="once");$("#repDays").classList.toggle("hidden",e.target.value!=="custom")}
+    if(e.target.matches(".a-src")){const c=e.target.closest(".acard");c.querySelector(".a-val").placeholder=e.target.value==="url"?t("a_url_ph"):t("a_file_ph")}
+    if(e.target.matches(".a-ex")&&e.target.value!==""){const c=e.target.closest(".acard"),x=SVC_EX[+e.target.value];c.querySelector(".a-svc").value=x[0];c.querySelector(".a-data").value=x[1];e.target.value=""}
+  });
+  let tm;
+  body.addEventListener("input",e=>{
+    if(e.target.id!=="fChSearch")return;
+    clearTimeout(tm);tm=setTimeout(async()=>{
+      const q=e.target.value.trim(),box=$("#chRes");if(!q){box.innerHTML="";return}
+      const r=await api("search?"+new URLSearchParams({kind:"live_chan",q,limit:8}));
+      box.innerHTML=r.items.map(i=>`<div class="pick" data-id="${esc(i.id)}" data-name="${esc(i.name)}">${esc(i.name)}${CHMAP[i.id]?" · "+t("chan_word")+" "+esc(CHMAP[i.id]):""}</div>`).join("");
+      $$("#chRes .pick").forEach(p=>p.onclick=()=>{R.channel_id=p.dataset.id;M.chName=p.dataset.name;$("#fChSearch").value=p.dataset.name;box.innerHTML="";
+        if(CHMAP[p.dataset.id])$("#fNum").value=CHMAP[p.dataset.id]});
+    },250);
+  });
+}
+$("#mCancel").onclick=()=>$("#modal").close();
+$("#mTest").onclick=async()=>{
+  try{const p=payload();const r=await api("test",{body:{ntype:p.ntype,targets:p.targets,title_tpl:p.opts.title_tpl,msg_tpl:p.opts.msg_tpl}});res(r,t("test_sent"))}catch(e){fail(e)}
+};
+$("#mSave").onclick=async()=>{
+  try{
+    const p=payload();
+    await api(R.id?"reminders/"+R.id:"reminders",{method:R.id?"PUT":"POST",body:p});
+    $("#modal").close();toast(t("rem_saved"),"good");
+    if(M.onSaved)M.onSaved();
+    await Promise.all([loadSchedule(),loadRules(),loadStatus(),loadChmap()]);
+  }catch(e){fail(e)}
+};
+
+function openTimeModal(pre){
+  pre=pre||{};
+  openEditor({heading:t("h_time"),sub:t("s_time"),base:{kind:"time",scope:"live",...(pre.base||{})},preTune:pre.preTune,chName:pre.chName});
+}
+async function editReminder(id){
+  const l=await api("reminders"),x=l.find(r=>r.id===id);if(!x)return;
+  const ch=x.channel_id&&!x.pattern&&x.kind==="time"?x.channel_id:"";
+  openEditor({heading:t("h_edit"),sub:x.label||x.title||x.pattern||x.channel_pattern||"",rem:fromRem(x),chName:ch});
+}
+function itemAction(act,it,btn,pre){
+  pre=pre||{};
+  if(act==="fav"){api("favorites",{body:{channel_id:it.id,on:!it.fav}}).then(()=>{it.fav=!it.fav;renderResults()}).catch(fail);return}
+  if(act==="vplay"){if(S.kind==="series")openSeriesSheet({id:it.id,name:it.name});else openPlaySheet({vod:"movie",id:it.id,ext:it.ext||"",name:it.name});return}
+  if(act==="play"){openPlaySheet({id:it.id||it.channel_id,name:it.name||it.cname||it.channel_id});return}
+  if(act==="prog"){
+    openEditor({heading:t("h_prog"),sub:`${it.title} · ${it.cname||it.channel_id} · ${dayLabel(it.start)} ${hm(it.start)}`,
+      base:{kind:"program",scope:"live",channel_id:it.channel_id,start:it.start,stop:it.stop,title:it.title,label:it.title},preTune:pre.tune,
+      onSaved:()=>{if(btn&&btn.isConnected)btn.outerHTML=`<button class="btn small done">${t("r_set")}</button>`;it.has_reminder=true;if(!$("#view-grid").classList.contains("hidden"))loadGrid(true)}});
+  }else if(act==="title"){
+    openEditor({heading:t("h_title"),sub:t("s_title"),base:{kind:"rule",scope:"live",pattern:it.title,channel_pattern:"",label:it.title}});
+  }else if(act==="chan"){
+    openEditor({heading:t("h_chan"),sub:t("s_chan2"),base:{kind:"rule",scope:"live",pattern:"",channel_pattern:it.name,label:it.name,channel_id:it.id},preTune:pre.tune});
+  }else if(act==="newt"){
+    openEditor({heading:t("h_newt"),sub:t("s_newt"),base:{kind:"rule",scope:S.kind,pattern:it.name,label:t("new_prefix")+it.name}});
+  }
+}
+function watchSearch(){
+  const k=kindKey();
+  if(k==="live_chan"){openEditor({heading:t("h_chans"),sub:t("s_chans"),base:{kind:"rule",scope:"live",pattern:"",channel_pattern:S.q,label:t("chan_prefix")+S.q}});return}
+  if(k==="live_prog")openEditor({heading:t("h_watch"),sub:t("s_watch"),base:{kind:"rule",scope:"live",pattern:S.q,channel_pattern:S.chan,in_descr:S.descr,label:S.q||S.chan}});
+  else openEditor({heading:t("h_newt"),sub:t("h_newt2"),base:{kind:"rule",scope:S.kind,pattern:S.q,label:t("new_prefix")+S.q}});
+}
+
+/* ---------- schema & regler ---------- */
+async function loadSchedule(){
+  const l=await api("schedule");$("#schedCount").textContent=l.length;
+  if(!l.length){$("#sched").innerHTML=`<div class="empty">${t("no_sched")}</div>`;return}
+  let h="",last="";
+  l.forEach(s=>{
+    const d=dayLabel(s.fire_at);if(d!==last){h+=`<div class="day" style="margin:10px 0 2px">${esc(d)}</div>`;last=d}
+    const snz=s.via==="snooze",time=s.via==="time";
+    const meta=snz?`${esc(s.channel||"")} ${s.start?"· "+t("start_lbl")+" "+hm(s.start):""}`:time?`${esc(repeatText(s))}${s.channel?" · "+esc(s.channel):""}`:`${esc(s.channel)} · ${t("start_lbl")} ${hm(s.start)}${s.lead?` (−${s.lead} min)`:""}`;
+    h+=`<div class="sched ${snz?"snz":""}"><div class="when"><div class="big">${hm(s.fire_at)}</div><div class="rel">${rel(s.fire_at)}</div></div>
+     <div class="body"><div class="title" style="font-size:14px">${time?"⏰ ":snz?"💤 ":""}${esc(s.title||"")}</div>
+     <div class="meta">${meta}</div>
+     <div class="mini">${snz?`<span class="type">${t("snoozed_lbl")}</span>`:`<span class="type">${ntypeIcon[s.ntype]||""} ${esc(t("nts_"+s.ntype))}</span>
+       ${tnames(s.targets).map(x=>`<span>${esc(x)}</span>`).join("")}${s.via==="rule"?`<span>${t("rule_tag")}</span>`:""}${s.tune?`<span class="type">${t("tune_to",{n:esc(s.tune_number||"?")})} ${time?"":(s.tune_when==="notify"?t("with_notice"):t("at_start"))}</span>`:""}
+       ${s.n_actions?`<span class="type">${t("actions_n",{n:s.n_actions})}</span>`:""}`}</div></div>
+     <div class="actions">${snz?`<button class="btn small danger" data-sdel="${s.snooze_id}" title="${esc(t("cancel_snooze"))}">✕</button>`:
+       `<button class="btn small" data-edit="${s.reminder_id}" title="${esc(t("edit"))}">✎</button>${s.via!=="rule"?`<button class="btn small danger" data-del="${s.reminder_id}" title="${esc(t("remove"))}">✕</button>`:""}`}</div></div>`;
+  });
+  $("#sched").innerHTML=h;
+  $$("#sched [data-edit]").forEach(b=>b.onclick=()=>editReminder(+b.dataset.edit));
+  $$("#sched [data-sdel]").forEach(b=>b.onclick=async()=>{await api("snoozes/"+b.dataset.sdel,{method:"DELETE"});loadSchedule()});
+  $$("#sched [data-del]").forEach(b=>b.onclick=async()=>{await api("reminders/"+b.dataset.del,{method:"DELETE"});toast(t("deleted"));loadSchedule();loadRules();if(RES&&kindKey()==="live_prog")runSearch()});
+}
+async function loadRules(){
+  const l=(await api("reminders")).filter(r=>r.kind!=="program");$("#ruleCount").textContent=l.length;
+  if(!l.length){$("#rules").innerHTML=`<div class="empty">${t("no_rules")}</div>`;return}
+  $("#rules").innerHTML=l.map(r=>`<div class="rule"><label class="sw"><input type="checkbox" data-tg="${r.id}" ${r.enabled?"checked":""}><span></span></label>
+    <div class="body"><div class="title" style="font-size:14px"><span class="badge">${r.kind==="time"?t("b_time"):r.scope==="live"?t("b_live"):r.scope==="movie"?t("b_movie"):t("b_series")}</span>${esc(r.label||r.pattern||r.channel_pattern)}</div>
+    <div class="meta">${r.kind==="time"?esc(repeatText(r)):""}${r.pattern?`${t("meta_search")}: <span class="t">${esc(r.pattern)}</span>`:""}${r.channel_pattern?` · ${t("meta_chan")}: <span class="t">${esc(r.channel_pattern)}</span>`:""}${r.scope==="live"&&r.kind!=="time"?` · −${r.lead} min`:""}${r.in_descr?" · "+t("meta_descr"):""}</div>
+    <div class="mini"><span class="type">${ntypeIcon[r.ntype]||""} ${esc(t("nts_"+r.ntype))}</span>${tnames(r.targets).map(x=>`<span>${esc(x)}</span>`).join("")}${r.tune?`<span class="type">${t("tune_to",{n:esc(r.tune_number||t("tune_saved"))})}</span>`:""}${r.actions.length?`<span class="type">${t("actions_n",{n:r.actions.length})}</span>`:""}</div></div>
+    <div class="actions"><button class="btn small" data-re="${r.id}" title="${esc(t("edit"))}">✎</button><button class="btn small danger" data-rd="${r.id}">✕</button></div></div>`).join("");
+  $$("#rules [data-tg]").forEach(i=>i.onchange=async()=>{await api("reminders/"+i.dataset.tg+"/toggle",{method:"POST",body:{}});loadSchedule()});
+  $$("#rules [data-re]").forEach(b=>b.onclick=()=>editReminder(+b.dataset.re));
+  $$("#rules [data-rd]").forEach(b=>b.onclick=async()=>{if(!confirm(t("confirm_del")))return;await api("reminders/"+b.dataset.rd,{method:"DELETE"});loadRules();loadSchedule()});
+}
+
+/* ---------- inställningar ---------- */
+async function loadSettings(){DEF={...DEF,...await api("settings")};renderSettings()}
+function renderSettings(){
+  $("#dLead").value=DEF.lead;$("#dType").innerHTML=typeOptions(DEF.ntype);renderDevs($("#dDevs"),$("#dType").value,DEF.targets);
+  $("#dSnooze").value=DEF.snooze_min;
+  $("#sTts").innerHTML=`<option value="">–</option>`+TG.tts_entities.map(e=>`<option value="${esc(e.id)}">${esc(e.name)} (${esc(e.id)})</option>`).join("");
+  $("#sTts").value=DEF.tts_entity||"";$("#sTtsLang").value=DEF.tts_language||"";
+  $("#qEn").checked=!!DEF.quiet_enabled;$("#qFrom").value=DEF.quiet_from;$("#qTo").value=DEF.quiet_to;
+  $("#sHome").innerHTML=TG.persons.length?devsHtml(TG.persons,DEF.home_entities||[]):`<span class="lbl">${t("d_empty")}</span>`;
+  $("#tEnt").value=DEF.tune_entity||"";$("#tDelay").value=DEF.tune_delay;$("#tSuffix").value=DEF.tune_suffix||"";
+  $("#tPre").value=DEF.tune_pre_entity||"";$("#tPreWait").value=DEF.tune_pre_wait;
+  $("#remListS").innerHTML=TG.remotes.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("");
+  $("#sPlay").innerHTML=TG.media_players.length?devsHtml(TG.media_players,DEF.play_entities||[]):`<span class="lbl">${t("d_empty")}</span>`;
+  $("#sPlayFmt").value=DEF.play_fmt||"hls";$("#sPlayCt").innerHTML=CTS.map(c=>`<option value="${c}">${c==="auto"?esc(t("play_ct_auto")):c}</option>`).join("");$("#sPlayCt").value=DEF.play_ctype||"auto";
+  $("#haInfo").innerHTML=haInfoHtml();
+  loadChmap();
+}
+$("#dType").onchange=()=>renderDevs($("#dDevs"),$("#dType").value,DEF.targets);
+async function saveSettings(){
+  const p={lead:+$("#dLead").value||0,ntype:$("#dType").value,targets:chosen($("#dDevs")),snooze_min:+$("#dSnooze").value||10,
+    tts_entity:$("#sTts").value,tts_language:$("#sTtsLang").value.trim(),quiet_enabled:$("#qEn").checked,quiet_from:$("#qFrom").value||"22:00",quiet_to:$("#qTo").value||"07:00",
+    home_entities:chosen($("#sHome")),tune_entity:$("#tEnt").value.trim(),tune_delay:+$("#tDelay").value||0.4,tune_suffix:$("#tSuffix").value.trim(),
+    tune_pre_entity:$("#tPre").value.trim(),tune_pre_wait:+$("#tPreWait").value||0,
+    play_entities:chosen($("#sPlay")),play_fmt:$("#sPlayFmt").value,play_ctype:$("#sPlayCt").value};
+  try{await api("settings",{body:p});DEF={...DEF,...p};toast(t("saved_ok"),"good")}catch(e){fail(e)}
+}
+["dSave","vSave","qSave","tSave","pSave"].forEach(id=>$("#"+id).onclick=saveSettings);
+$("#tTest").onclick=async()=>{
+  try{await saveSettings();const r=await api("tune_now",{body:{entity:$("#tEnt").value.trim(),number:$("#tTestNum").value.trim()}});res(r,t("tune_sent"))}catch(e){fail(e)}
+};
+$("#dTest").onclick=async()=>{
+  try{const r=await api("test",{body:{ntype:$("#dType").value,targets:chosen($("#dDevs"))}});res(r,t("test_sent"))}catch(e){fail(e)}
+};
+async function loadChmap(){
+  const l=await api("channelmap");CHMAP={};l.forEach(x=>CHMAP[x.channel_id]=x.number);
+  const el=$("#chmap");
+  el.innerHTML=l.length?`<table>${l.map(x=>`<tr><td>${esc(x.name)}</td><td style="width:90px"><input type="text" value="${esc(x.number)}" data-cm="${esc(x.channel_id)}" style="width:70px;padding:4px 8px"></td>
+    <td style="width:40px"><button class="btn small danger" data-cd="${esc(x.channel_id)}">✕</button></td></tr>`).join("")}</table>`:`<span class="lbl">${t("chmap_none")}</span>`;
+  $$("#chmap [data-cm]").forEach(i=>i.onchange=async()=>{try{await api("channelmap",{body:{channel_id:i.dataset.cm,number:i.value.trim()}});toast(t("saved_ok"),"good");loadChmap()}catch(e){fail(e)}});
+  $$("#chmap [data-cd]").forEach(b=>b.onclick=async()=>{await api("channelmap?channel_id="+encodeURIComponent(b.dataset.cd),{method:"DELETE"});loadChmap()});
+}
+async function loadHist(){
+  const l=await api("history");
+  $("#hist").innerHTML=l.length?`<table><tr><th>${t("when_col")}</th><th>${t("event_col")}</th><th></th></tr>${l.map(h=>`<tr><td>${fmt(h.ts,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</td>
+    <td>${esc(h.label)}<div class="mini"><span class="type">${ntypeIcon[h.ntype]||{sound:"🔔",service:"🛠️",set_entity:"🎚️",pre:"⏻",snooze:"💤"}[h.ntype]||""}</span>${tnames(h.targets).map(x=>`<span>${esc(x)}</span>`).join("")}</div>${h.err?`<div style="color:var(--bad);font-size:12px">${esc(h.err)}</div>`:""}</td>
+    <td>${h.ok?"✅":"❌"}</td></tr>`).join("")}</table>`:`<div class="empty">${t("no_events")}</div>`;
+}
+
+/* ---------- tablå (grid) ---------- */
+const G={from:null,day:0,hours:3,q:"",hl:"",cat:"",fav:false,limit:80,data:null,inited:false};
+const PPM={2:8,3:6,6:3.2,12:1.6};
+const shortDay=ts=>fmt(ts,{weekday:"short",day:"numeric",month:"numeric"});
+async function initGridControls(){
+  const cats=await api("categories?kind=live");
+  $("#gCat").innerHTML=`<option value="">${t("all_cats")}</option>`+cats.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+  $("#gCat").value=G.cat;
+  const now=Math.floor(Date.now()/1000);
+  $("#gDays").innerHTML=[0,1,2,3,4,5,6].map(k=>`<button class="chip" data-day="${k}">${k===0?t("today"):k===1?t("tomorrow"):fmt(now+k*86400,{weekday:"short"})}</button>`).join("");
+  $$("#gDays [data-day]").forEach(b=>b.onclick=()=>{G.day=+b.dataset.day;G.from=null;loadGrid()});
+  $("#gFav").classList.toggle("on",G.fav);
+}
+async function initGrid(){
+  G.inited=true;await initGridControls();
+  $("#gPrev").onclick=()=>{G.from-=G.hours*1800;loadGrid(true)};
+  $("#gNext").onclick=()=>{G.from+=G.hours*1800;loadGrid(true)};
+  $("#gNow").onclick=()=>{G.day=0;G.from=null;loadGrid()};
+  $("#gZoom").onchange=()=>{G.hours=+$("#gZoom").value;loadGrid(true)};
+  $("#gCat").onchange=()=>{G.cat=$("#gCat").value;loadGrid()};
+  $("#gFav").onclick=()=>{G.fav=!G.fav;$("#gFav").classList.toggle("on",G.fav);loadGrid()};
+  $("#gQ").onkeydown=e=>{if(e.key==="Enter"){G.q=$("#gQ").value.trim();loadGrid()}};
+  $("#gHl").onkeydown=e=>{if(e.key==="Enter"){G.hl=$("#gHl").value.trim();loadGrid(true)}};
+  $("#gQ").onblur=()=>{if($("#gQ").value.trim()!==G.q){G.q=$("#gQ").value.trim();loadGrid()}};
+  $("#gHl").onblur=()=>{if($("#gHl").value.trim()!==G.hl){G.hl=$("#gHl").value.trim();loadGrid(true)}};
+  $("#gTimeBtn").onclick=()=>openTimeModal({});
+  setInterval(()=>{if(!$("#view-grid").classList.contains("hidden")&&!document.hidden)loadGrid(true)},300000);
+  loadGrid();
+}
+async function loadGrid(keep){
+  const wrap=$("#gridwrap"),sx=keep?wrap.scrollLeft:0,sy=keep?wrap.scrollTop:0;
+  if(!keep)wrap.innerHTML=`<div class="empty"><span class="spin"></span></div>`;
+  const p=new URLSearchParams({hours:G.hours,q:G.q,hl:G.hl,cat:G.cat,limit:G.limit,fav:G.fav?"1":"0"});
+  if(G.from)p.set("from",G.from);else{p.set("day",G.day);p.set("hour",18)}
+  let d;try{d=await api("grid?"+p)}catch(e){wrap.innerHTML=`<div class="empty">${t("err")}: ${esc(errText(e.message))}</div>`;return}
+  G.from=d.from;G.data=d;
+  const ppm=PPM[d.hours]||6,W=d.hours*60*ppm;
+  let ticks="";
+  for(let m=0;m<=d.hours*60;m+=30){const tt=d.from+m*60;const mid=hm(tt)==="00:00";
+    ticks+=`<div class="gtick" style="left:${m*ppm}px">${hm(tt)}${(m===0||mid)?`<small>${esc(shortDay(tt))}</small>`:""}</div>`}
+  let h=`<div class="g"><div class="ghead"><div class="gcorner">${t("f_chan")}</div><div class="gtl" style="width:${W}px">${ticks}</div></div>`;
+  if(!d.channels.length)h+=`<div class="empty" style="position:sticky;left:0">${t("no_hits")}</div>`;
+  d.channels.forEach((ch,ci)=>{
+    let blocks="";
+    ch.programs.forEach((pg,pi)=>{
+      const l=(Math.max(pg.start,d.from)-d.from)/60*ppm,r=(Math.min(pg.stop,d.to)-d.from)/60*ppm,w=Math.max(r-l-2,6);
+      const cls=["gp",pg.start<=d.now&&pg.stop>d.now?"now":"",pg.stop<=d.now?"past":"",pg.has_reminder?"rem":"",pg.hit?"hit":""].join(" ");
+      blocks+=`<div class="${cls}" style="left:${l}px;width:${w}px" data-c="${ci}" data-p="${pi}" title="${esc(pg.title)} (${hm(pg.start)}–${hm(pg.stop)})"><b>${esc(pg.title||t("no_title"))}</b><span>${hm(pg.start)}–${hm(pg.stop)}</span></div>`;
+    });
+    h+=`<div class="grow"><div class="gch" data-c="${ci}"><button class="star ${ch.fav?"on":""}" data-star="${ci}" title="${esc(t("fav_on"))}">⭐</button>${icoHtml(ch.icon,"📺")}<div><div class="gname">${esc(ch.name)}</div>${ch.number?`<span class="gnum">${esc(ch.number)}</span>`:""}</div></div><div class="gline" style="width:${W}px">${blocks}</div></div>`;
+  });
+  if(d.now>=d.from&&d.now<=d.to)h+=`<div class="gnow" style="left:${168+(d.now-d.from)/60*ppm}px"></div>`;
+  h+=`</div>`;
+  if(d.total>d.channels.length)h+=`<div style="position:sticky;left:0;padding:12px"><button class="btn" id="gMore">${t("show_more")} (${d.total-d.channels.length} ${t("left")})</button></div>`;
+  wrap.innerHTML=h;wrap.scrollLeft=sx;wrap.scrollTop=sy;
+  $$("#gridwrap .gp").forEach(e=>e.onclick=()=>openProgSheet(d.channels[+e.dataset.c],d.channels[+e.dataset.c].programs[+e.dataset.p]));
+  $$("#gridwrap .gch").forEach(e=>e.onclick=()=>openChanSheet(d.channels[+e.dataset.c]));
+  $$("#gridwrap [data-star]").forEach(e=>e.onclick=async ev=>{ev.stopPropagation();const ch=d.channels[+e.dataset.star];
+    try{await api("favorites",{body:{channel_id:ch.id,on:!ch.fav}});loadGrid(true)}catch(err){fail(err)}});
+  const mo=$("#gMore");if(mo)mo.onclick=()=>{G.limit+=80;loadGrid(true)};
+}
+function tuneNowHtml(ch){
+  return `<div class="field" style="border-top:1px solid var(--line);padding-top:14px"><label>${t("tune_now_h")}</label>
+    <div class="row"><input type="text" id="shNum" inputmode="numeric" placeholder="${esc(t("channel_ph"))}" style="width:130px" value="${esc(CHMAP[ch.id]||"")}">
+    <label class="dev"><input type="checkbox" id="shRem" checked> ${t("remember")}</label><button class="btn primary" id="shTune">${t("chan_btn")}</button></div></div>`;
+}
+function bindTuneNow(ch){
+  $("#shTune").onclick=async()=>{
+    try{const r=await api("tune_now",{body:{channel_id:ch.id,number:$("#shNum").value.trim(),remember:$("#shRem").checked,name:ch.name}});
+      res(r,t("tune_sent"));if(r.ok){await loadChmap();if(G.inited)loadGrid(true)}}catch(e){fail(e)}};
+}
+function openProgSheet(ch,p){
+  const now=Math.floor(Date.now()/1000),air=p.start<=now&&p.stop>now;
+  $("#shTitle").textContent=p.title||t("no_title");
+  $("#shSub").textContent=`${ch.name}${ch.number?" ("+t("chan_word")+" "+ch.number+")":""} · ${dayLabel(p.start)} ${hm(p.start)}–${hm(p.stop)}${air?" · "+t("running_now"):""}`;
+  $("#shBody").innerHTML=`${p.descr?`<div class="desc" style="-webkit-line-clamp:8;margin:0">${esc(p.descr)}</div>`:""}
+    <div class="row">${p.stop>now?`<button class="btn amber" id="shRemind">${p.has_reminder?t("remind_more"):t("remind")}</button><button class="btn amber" id="shRemTune">${t("remind_tune")}</button>`:""}
+    <button class="btn" id="shTitleRule">${t("watch_title")}</button>${ch.playable?`<button class="btn" id="shPlay">${t("play_btn_s")}</button>`:""}</div>${tuneNowHtml(ch)}`;
+  const it={channel_id:ch.id,start:p.start,stop:p.stop,title:p.title,cname:ch.name,icon:ch.icon,has_reminder:p.has_reminder};
+  if($("#shRemind"))$("#shRemind").onclick=()=>{$("#sheet").close();itemAction("prog",it,null,{})};
+  if($("#shRemTune"))$("#shRemTune").onclick=()=>{$("#sheet").close();itemAction("prog",it,null,{tune:true})};
+  $("#shTitleRule").onclick=()=>{$("#sheet").close();itemAction("title",it,null)};
+  if($("#shPlay"))$("#shPlay").onclick=()=>{$("#sheet").close();openPlaySheet(ch)};
+  bindTuneNow(ch);$("#sheet").showModal();
+}
+function openChanSheet(ch){
+  $("#shTitle").textContent=ch.name;$("#shSub").textContent=ch.number?t("chan_word")+" "+ch.number:t("no_num");
+  $("#shBody").innerHTML=`<div class="row"><button class="btn amber" id="shTime">${t("time_chan_btn")}</button><button class="btn" id="shWatch">🔔 ${t("watch_chan")}</button>${ch.playable?`<button class="btn" id="shPlay">${t("play_btn_s")}</button>`:""}</div>${tuneNowHtml(ch)}`;
+  $("#shTime").onclick=()=>{$("#sheet").close();openTimeModal({base:{channel_id:ch.id},preTune:true,chName:ch.name})};
+  $("#shWatch").onclick=()=>{$("#sheet").close();itemAction("chan",{id:ch.id,name:ch.name},null,{})};
+  if($("#shPlay"))$("#shPlay").onclick=()=>{$("#sheet").close();openPlaySheet(ch)};
+  bindTuneNow(ch);$("#sheet").showModal();
+}
+function openPlaySheet(ch){
+  $("#shTitle").textContent=t("play_title");$("#shSub").textContent=ch.name;
+  const mp=TG.media_players||[];
+  $("#shBody").innerHTML=`<div class="field"><label>${t("play_players")}</label><div class="devs" id="plDevs">${mp.length?devsHtml(mp,DEF.play_entities||[]):`<span class="lbl">${t("play_nodev")}</span>`}</div></div>
+    <div class="row" ${ch.vod?'style="display:none"':""}><div class="field" style="flex:1"><label>${t("play_fmt")}</label><select id="plFmt"><option value="hls" ${DEF.play_fmt!=="ts"?"selected":""}>${t("play_fmt_hls")}</option><option value="ts" ${DEF.play_fmt==="ts"?"selected":""}>${t("play_fmt_ts")}</option></select></div></div>
+    <div class="row"><button class="btn primary" id="plGo" ${mp.length?"":"disabled"}>${t("play_dev")}</button><button class="btn" id="plHere">${t("play_here")}</button></div>
+    <div class="row"><button class="btn" id="plVlc">${t("vlc_here")}</button><button class="btn" id="plCopy">${t("vlc_copy")}</button></div><div class="hint">${t("vlc_hint")}</div>`;
+  $("#plGo").onclick=async()=>{const tg=chosen($("#plDevs"));
+    try{const r=await api("play",{body:ch.vod?{kind:ch.vod,id:ch.id,ext:ch.ext,name:ch.name,targets:tg}:{channel_id:ch.id,targets:tg,fmt:$("#plFmt").value}});res(r,t("play_sent"));if(r.ok)$("#sheet").close()}catch(e){fail(e)}};
+  $("#plHere").onclick=()=>{$("#sheet").close();openPlayer(ch)};
+  $("#plVlc").onclick=()=>openVlc(ch);$("#plCopy").onclick=()=>openVlc(ch,true);
+  $("#sheet").showModal();
+}
+async function openSeriesSheet(se){
+  $("#shTitle").textContent=se.name;$("#shSub").textContent=t("play_title");
+  const mp=TG.media_players||[];
+  $("#shBody").innerHTML=`<div class="lbl">…</div>`;$("#sheet").showModal();
+  let r;try{r=await api("series/"+encodeURIComponent(se.id))}catch(e){fail(e);return}
+  if(!r.ok){$("#shBody").innerHTML=`<div class="hint">${esc((r.errors||[]).join("; "))}</div>`;return}
+  const seasons=Object.keys(r.seasons).sort((x,y)=>(+x)-(+y));
+  if(!seasons.length){$("#shBody").innerHTML=`<div class="hint">${t("no_hits")}</div>`;return}
+  $("#shBody").innerHTML=`<div class="field"><label>${t("play_players")}</label><div class="devs" id="plDevs">${mp.length?devsHtml(mp,DEF.play_entities||[]):`<span class="lbl">${t("play_nodev")}</span>`}</div></div>
+    <div class="field"><label>${t("season")}</label><select id="seSel">${seasons.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("")}</select></div><div id="epList" class="stack" style="gap:6px;max-height:42vh;overflow:auto"></div>`;
+  const draw=()=>{const eps=r.seasons[$("#seSel").value]||[];
+    $("#epList").innerHTML=eps.map((e,i)=>`<div class="row" style="align-items:center"><span style="flex:1">${esc(String(e.num??""))}. ${esc(e.title)}</span>
+      <button class="btn small primary" data-ep="${i}" data-m="dev" ${mp.length?"":"disabled"}>${t("play_btn_s")}</button><button class="btn small" data-ep="${i}" data-m="here">🖥</button><button class="btn small" data-ep="${i}" data-m="vlc" title="VLC">🎞</button></div>`).join("");
+    $$("#epList [data-ep]").forEach(b=>b.onclick=async()=>{const e=eps[+b.dataset.ep],nm=se.name+" – "+e.title;
+      if(b.dataset.m==="here"){$("#sheet").close();openPlayer({vod:"episode",id:e.id,ext:e.ext,name:nm});return}
+      if(b.dataset.m==="vlc"){openVlc({vod:"episode",id:e.id,ext:e.ext,name:nm});return}
+      try{const rr=await api("play",{body:{kind:"episode",id:e.id,ext:e.ext,name:nm,targets:chosen($("#plDevs"))}});res(rr,t("play_sent"))}catch(x){fail(x)}})};
+  $("#seSel").onchange=draw;draw();
+}
+let HLS=null;
+function loadHls(){return new Promise((ok,no)=>{if(window.Hls)return ok();const s=document.createElement("script");s.src="hls.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function vlcLink(u,nm,ua){
+  const m=u.match(/^(https?):\/\/(.*)$/);
+  if(/Android/i.test(ua)&&m)return "intent://"+m[2]+"#Intent;scheme="+m[1]+";action=android.intent.action.VIEW;type=video/*;package=org.videolan.vlc;S.title="+encodeURIComponent(nm)+";end";
+  if(/iPhone|iPad|iPod/i.test(ua))return "vlc-x-callback://x-callback-url/stream?url="+encodeURIComponent(u);
+  return null}
+async function openVlc(ch,copyOnly){
+  let r;try{r=await api("streamurl",{body:ch.vod?{kind:ch.vod,id:ch.id,ext:ch.ext}:{channel_id:ch.id,fmt:DEF.play_fmt==="ts"?"ts":"hls"}})}catch(e){fail(e);return}
+  if(!r||!r.ok||!r.url){toast(t("vlc_err"),"bad");return}
+  const u=r.url,ua=navigator.userAgent||((navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)?"iPad":""),nm=String(ch.name||"TV").replace(/[\r\n]+/g," ");
+  if(copyOnly){
+    try{await navigator.clipboard.writeText(u);toast(t("vlc_copied"),"good")}catch(e){window.prompt(t("vlc_copy"),u)}
+    return}
+  const lk=vlcLink(u,nm,ua);
+  if(lk){location.href=lk;toast(t("vlc_opened"),"good");return}
+  const blob=new Blob(["#EXTM3U\n#EXTINF:-1,"+nm+"\n"+u+"\n"],{type:"audio/x-mpegurl"});
+  const el=document.createElement("a");el.href=URL.createObjectURL(blob);el.download=(nm.replace(/[^\w\-åäöÅÄÖ ]+/g,"").trim()||"tv")+".m3u";
+  document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(el.href),5000);
+  toast(t("vlc_downloaded"),"good");
+}
+let CURP=null;
+async function openPlayer(ch){
+  CURP=ch;
+  $("#pTitle").textContent=ch.name;$("#pErr").textContent="";
+  const v=$("#pVideo");$("#player").showModal();
+  const src=ch.vod?`stream/vod/${ch.vod}/${encodeURIComponent(ch.id)}.${encodeURIComponent(ch.ext||"mp4")}`:"stream/"+encodeURIComponent(ch.id)+".m3u8";
+  try{
+    if(ch.vod){v.src=src;v.onerror=()=>{$("#pErr").textContent=t("player_err_vod")}}
+    else if(v.canPlayType("application/vnd.apple.mpegurl")){v.src=src}
+    else{await loadHls();if(!window.Hls||!Hls.isSupported())throw 0;
+      HLS=new Hls({liveSyncDurationCount:3});HLS.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal)$("#pErr").textContent=t("player_err")});
+      HLS.loadSource(src);HLS.attachMedia(v)}
+    v.play().catch(()=>{});
+  }catch(e){$("#pErr").textContent=t("player_err")}
+}
+function closePlayer(){const v=$("#pVideo");v.onerror=null;try{v.pause()}catch(e){}if(HLS){HLS.destroy();HLS=null}v.removeAttribute("src");v.load();$("#player").close()}
+$("#pClose").onclick=closePlayer;$("#pVlc").onclick=()=>{if(CURP)openVlc(CURP)};$("#player").addEventListener("cancel",e=>{e.preventDefault();closePlayer()});
+$("#shClose").onclick=()=>$("#sheet").close();
+$("#btnTime").onclick=()=>openTimeModal({});
+
+/* ---------- events ---------- */
+$$(".tabs button").forEach(b=>b.onclick=()=>{
+  const v=b.dataset.view;
+  $$(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
+  ["main","grid","settings","help"].forEach(n=>$("#view-"+n).classList.toggle("hidden",n!==v));
+  if(v==="settings"){loadSettings();loadHist();loadStatus()}
+  if(v==="grid"){if(!G.inited)initGrid();else loadGrid(true)}
+});
+$$("#langSeg button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+$$("#kindSeg button").forEach(b=>b.onclick=async()=>{S.kind=b.dataset.k;S.cat="";await loadCats();runSearch()});
+$$("#subSeg button").forEach(b=>b.onclick=async()=>{S.sub=b.dataset.s;S.cat="";await loadCats();runSearch()});
+$$("#whenBox .chip").forEach(b=>b.onclick=()=>{S.when=b.dataset.w;runSearch()});
+$("#favChip").onclick=()=>{S.fav=!S.fav;runSearch()};
+$("#btnSearch").onclick=()=>runSearch();
+$("#q").onkeydown=$("#chan").onkeydown=e=>{if(e.key==="Enter")runSearch()};
+$("#cat").onchange=()=>runSearch();$("#descr").onchange=()=>runSearch();
+$("#btnSave").onclick=async()=>{
+  readControls();if(!S.q){toast(t("write_kw_first"),"bad");return}
+  await api("saved",{body:{kind:kindKey(),pattern:S.q}});await loadSaved();toast(t("kw_saved"),"good");
+};
+$("#btnRefresh").onclick=async()=>{await api("refresh",{body:{}});const tm=setInterval(async()=>{await loadStatus();if(!ST.refreshing){clearInterval(tm);runSearch();loadSchedule()}},3000);loadStatus()};
+
+(async function init(){
+  const dl=document.createElement("datalist");dl.id="entdl";document.body.appendChild(dl);
+  bindEditor();
+  try{await loadStatus();LANG=LANGS.includes(ST.lang)?ST.lang:"sv"}catch(e){}
+  applyLang();
+  try{TG=await api("targets")}catch(e){}
+  await Promise.all([loadSettings(),loadSaved(),loadCats(),loadChmap()]);
+  renderStatus();syncControls();runSearch();loadSchedule();loadRules();
+  setInterval(()=>{loadSchedule();loadStatus()},60000);
+})();
+
+</script>
+</body>
+</html>

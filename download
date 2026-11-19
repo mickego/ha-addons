@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.db
+*.db-*
+options.json
+.DS_Store

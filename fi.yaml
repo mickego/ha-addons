@@ -1,0 +1,31 @@
+configuration:
+  epg_url:
+    name: EPG-URL (XMLTV)
+    description: XMLTV-/EPG-lähteesi osoite. Tallennetaan vain tänne – ei näytetä hallintapaneelissa.
+  xtream_url:
+    name: Xtream-URL (valinnainen)
+    description: Valinnainen Xtream Codes -osoite sarja-/elokuva-/live-luettelolle. Usein sama kirjautuminen kuin EPG-URL.
+  playlist_url:
+    name: M3U-soittolista (valinnainen)
+    description: Valinnainen varavaihtoehto kanavalistalle, kun Xtream API ei ole käytettävissä.
+  refresh_hours:
+    name: Päivitysväli (tuntia)
+    description: Kuinka usein EPG ja luettelo haetaan.
+  epg_days:
+    name: Säilytettävät EPG-päivät
+    description: Kuinka monta päivää eteenpäin tallennetaan.
+  default_lead_minutes:
+    name: Oletusminuutit ennen alkua
+    description: Alkuarvo uusille muistutuksille.
+  tts_entity:
+    name: Oletus-TTS-moottori
+    description: Esimerkiksi tts.home_assistant_cloud. Voidaan asettaa myös hallintapaneelissa.
+  language:
+    name: Kieli
+    description: Käyttöliittymän oletuskieli (voidaan vaihtaa hallintapaneelissa).
+  tts_language:
+    name: Äänen kieli
+    description: Puhutun tekstin kielikoodi, esim. fi tai en. Tyhjä = sama kuin käyttöliittymä.
+  user_agent:
+    name: User agent
+    description: Muuta vain, jos palveluntarjoajasi vaatii tietyn.
