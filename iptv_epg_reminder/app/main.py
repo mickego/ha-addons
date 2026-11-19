@@ -797,6 +797,20 @@ async def api_play(request):
     return J({"ok": not err, "errors": [err] if err else []})
 
 
+async def api_streamurl(request):
+    """Adress till strömmen för uppspelning i VLC på den enhet som visar panelen.
+    Svaret är avsett för användarens egen klient och loggas/sparas aldrig."""
+    b = await request.json()
+    if b.get("kind") in ("movie", "episode"):
+        url, _ = await asyncio.to_thread(stream.resolve_vod, b["kind"], str(b.get("id") or ""), str(b.get("ext") or ""), state.CFG)
+    else:
+        fmt = "ts" if b.get("fmt") == "ts" else "hls"
+        url, _ = await asyncio.to_thread(stream.resolve, str(b.get("channel_id") or ""), fmt, state.CFG)
+    if not url:
+        return web.json_response({"ok": False, "errors": ["err_no_stream"]}, headers={"Cache-Control": "no-store"})
+    return web.json_response({"ok": True, "url": url}, headers={"Cache-Control": "no-store"})
+
+
 async def api_tune_now(request):
     b = await request.json()
     d = await asyncio.to_thread(engine.load_defaults_sync)
@@ -854,6 +868,7 @@ def make_app():
         web.get("/stream/seg", stream.segment),
         web.get("/stream/{cid}.m3u8", stream.playlist),
         web.post("/api/play", api_play),
+        web.post("/api/streamurl", api_streamurl),
         web.get("/api/series/{sid}", api_series),
         web.get("/stream/vod/{kind}/{id}.{ext}", stream.vod),
         web.get("/hls.min.js", hls_js),

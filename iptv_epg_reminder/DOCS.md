@@ -153,11 +153,11 @@ Tip: exclude the EPG-related entities from the recorder if you do not want their
 
 Needs an Xtream account (`epg_url`/`xtream_url`) or an M3U playlist (`playlist_url`) – channels from a pure XMLTV source have no stream and show no ▶ button.
 
-- **▶ Play** in search results, channel lists and the guide: choose media player(s) and format and press *Play on device*, or *Watch here* to open the in-panel player.
+- **▶ Play** in search results, channel lists and the guide: choose media player(s) and format and press *Play on device*, or *Watch here* to open the in-panel player. **Open in VLC on this device** plays in VLC on the device you are using: Android opens VLC directly, iPhone/iPad use the VLC app, and on Windows/Mac/Linux a small `.m3u` file is downloaded that opens in VLC (or use *Copy address* and paste into VLC with Ctrl+N). VLC must be installed on that device; browsers/apps that block opening other apps (e.g. some in-app web views) may need the .m3u or copy route.
 - **Action "Play channel"** in a reminder: plays the program's channel on the chosen player(s) at the notice or at program start. For time reminders the channel number under *Channel change* decides the channel. It counts as sound (quiet hours and "only if someone is home" apply).
 - **Settings → Playback**: default players (also used by the ▶ button in push notifications and by the dashboard card), format and content type. *HLS (.m3u8)* is recommended for Chromecast/Google TV and VLC; *auto* sends `music` to VLC (its integration only accepts that) and the right MIME type to others.
 - **Dashboard card**: `epg-now-card` accepts `play: true` (+ optional `play_entity`, `play_format`) and shows a ▶ button per channel. It fires the event `iptv_epg_play` (`channel_id` or `number`, `entity_id`, `fmt`) which you can also fire from your own automations.
-- The stream address contains your login. It is sent to the media player but never stored in reminders, history, events or sensors. Many providers allow only one or a few simultaneous streams per account.
+- The stream address contains your login. It is sent to the media player (and, only when you press *Open in VLC on this device* or *Copy address*, to your own browser) but never stored in reminders, history, events or sensors. Many providers allow only one or a few simultaneous streams per account.
 - The in-panel player needs an HLS stream (`.m3u8`); plain `.ts` cannot be played by browsers.
 - **Movies and series** (Xtream only): ▶ Play on the movie/series cards. For series pick season and episode. Files are sent as-is (mp4, mkv …) – browsers cannot play .mkv, use a media player.
 
@@ -328,11 +328,11 @@ Tips: undanta EPG-relaterade entiteter i recorder om du inte vill spara deras hi
 
 Kräver ett Xtream-konto (`epg_url`/`xtream_url`) eller en M3U-spellista (`playlist_url`) – kanaler från en ren XMLTV-källa saknar ström och får ingen ▶-knapp.
 
-- **▶ Spela** i sökresultat, kanallistor och tablån: välj mediaspelare och format och tryck *Spela på enhet*, eller *Titta här* för spelaren i panelen.
+- **▶ Spela** i sökresultat, kanallistor och tablån: välj mediaspelare och format och tryck *Spela på enhet*, eller *Titta här* för spelaren i panelen. **Öppna i VLC på den här enheten** spelar i VLC på den enhet du sitter vid: Android öppnar VLC direkt, iPhone/iPad använder VLC-appen och på Windows/Mac/Linux hämtas en liten `.m3u`-fil som öppnas i VLC (eller använd *Kopiera adress* och klistra in i VLC med Ctrl+N). VLC måste vara installerat på enheten; i appar/webbvyer som inte får öppna andra appar kan .m3u eller kopiera adress behövas.
 - **Åtgärden "Spela kanal"** i en påminnelse: spelar programmets kanal på vald(a) mediaspelare vid notisen eller vid programstart. För tidspåminnelser avgör kanalnumret under *Kanalbyte* kanalen. Räknas som ljud (tysta timmar och "bara om någon är hemma" gäller).
 - **Inställningar → Uppspelning**: standardspelare (används även av ▶-knappen i push-notiser och av dashboardkortet), format och innehållstyp. *HLS (.m3u8)* rekommenderas för Chromecast/Google TV och VLC; *auto* skickar `music` till VLC (dess integration accepterar bara det) och rätt MIME-typ till övriga.
 - **Dashboardkort:** `epg-now-card` tar `play: true` (+ valfritt `play_entity`, `play_format`) och visar en ▶-knapp per kanal. Den skickar eventet `iptv_epg_play` (`channel_id` eller `number`, `entity_id`, `fmt`) som du också kan skicka från egna automationer.
-- Strömadressen innehåller din inloggning. Den skickas till mediaspelaren men sparas aldrig i påminnelser, historik, events eller sensorer. Många leverantörer tillåter bara en eller ett par samtidiga strömmar per konto.
+- Strömadressen innehåller din inloggning. Den skickas till mediaspelaren (och bara när du trycker *Öppna i VLC på den här enheten* eller *Kopiera adress* även till din egen webbläsare) men sparas aldrig i påminnelser, historik, events eller sensorer. Många leverantörer tillåter bara en eller ett par samtidiga strömmar per konto.
 - Spelaren i panelen kräver HLS (`.m3u8`); rena `.ts`-strömmar kan inte spelas i webbläsare.
 - **Filmer och serier** (bara Xtream): ▶ Spela på film-/seriekorten. För serier väljer du säsong och avsnitt. Filerna skickas som de är (mp4, mkv …) – webbläsare kan inte spela .mkv, använd en mediaspelare.
 

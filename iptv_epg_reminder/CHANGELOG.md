@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.0
+- New **Open in VLC on this device** button (play sheet and in-panel player, per episode too): plays the stream in VLC on the device that shows the panel – Android (opens VLC directly), iPhone/iPad (VLC app), Windows/Mac/Linux (downloads a small .m3u file that opens in VLC; **Copy address** is the fallback for Ctrl+N)
+- Note: this is the one place where the stream address (with your login) is handed to your own browser, only when you press the button; it is never stored or logged
+
 ## 2.3.1
 - Playback: a failing media player no longer stops the others; players that only show dashboards (Pixel Tablet, Nest Hub …) now give a clear message
 

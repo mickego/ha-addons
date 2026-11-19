@@ -1,5 +1,5 @@
 name: "IPTV EPG Påminnelser"
-version: "2.3.1"
+version: "2.4.0"
 url: "https://github.com/mickego/ha-addons"
 slug: iptv_epg_reminder
 description: "IPTV EPG search, grid and reminders with notifications, TTS/sound, actions and channel tuning (SV/EN)"
