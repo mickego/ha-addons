@@ -59,6 +59,7 @@ Start, end, "after N times", exception dates and pause are under *When*. Excepti
 
 - **Calendar:** with `install_integration` on, restart Home Assistant once, then *Settings → Devices & services → Add integration → Reminders Pro*. You get `calendar.reminders_pro`.
 - **Dashboard cards:** `reminders-pro-next-card`, `reminders-pro-today-card`, `reminders-pro-upcoming-card`, `reminders-pro-pending-card`, `reminders-pro-quick-card` – add them from the card picker (search "Reminders Pro"). They read the sensors, so they work through Nabu Casa. The buttons need an administrator user.
+- **Own sensor per reminder:** tick *Create its own sensor in HA* under *Options*. You get `sensor.reminders_pro_<name>` (e.g. `sensor.reminders_pro_soptunnan`) whose state is the next occurrence – shown as "in 5 days" in the Companion app and on dashboards. Attributes: `local`, `local_date`, `local_time`, `days_left`, `hours_until`, `upcoming` (next 5), `last_fired`, `paused_until`. Use it in a text with `{state:sensor.reminders_pro_soptunnan}` or in an entities card.
 - **Sensors:** `sensor.reminders_pro_next`, `_today`, `_active`, `_unacknowledged`, `_last`, `binary_sensor.reminders_pro_attention`.
 - **Events:** `reminders_pro_fired`, `reminders_pro_done`, `reminders_pro_snoozed`, `reminders_pro_skipped`, `reminders_pro_unacknowledged`.
 - **Commands** (event `reminders_pro_command`): `{"cmd":"quick","title":"Pasta ready","minutes":10}`, `{"cmd":"done","token":"…"}`, `{"cmd":"trigger","id":3}`, `{"cmd":"pause","id":3,"days":2}`, `{"cmd":"resume","id":3}`.
@@ -154,6 +155,7 @@ Start, slut, ”efter N gånger”, undantagsdatum och paus finns under *När*. 
 
 - **Kalender:** med `install_integration` på startar du om Home Assistant en gång, sedan *Inställningar → Enheter och tjänster → Lägg till integration → Reminders Pro*. Du får `calendar.reminders_pro`.
 - **Dashboardkort:** `reminders-pro-next-card`, `reminders-pro-today-card`, `reminders-pro-upcoming-card`, `reminders-pro-pending-card`, `reminders-pro-quick-card` – lägg till från kortväljaren (sök ”Reminders Pro”). De läser sensorerna och fungerar därför via Nabu Casa. Knapparna kräver en administratörsanvändare.
+- **Egen sensor per påminnelse:** bocka i *Skapa en egen sensor i HA* under *Alternativ*. Du får `sensor.reminders_pro_<namn>` (t.ex. `sensor.reminders_pro_soptunnan`) vars värde är nästa tillfälle – visas som "om 5 dagar" i Companion-appen och på dashboards. Attribut: `local`, `local_date`, `local_time`, `days_left`, `hours_until`, `upcoming` (nästa 5), `last_fired`, `paused_until`. Använd den i en text med `{state:sensor.reminders_pro_soptunnan}` eller i ett entitetskort.
 - **Sensorer:** `sensor.reminders_pro_next`, `_today`, `_active`, `_unacknowledged`, `_last`, `binary_sensor.reminders_pro_attention`.
 - **Events:** `reminders_pro_fired`, `reminders_pro_done`, `reminders_pro_snoozed`, `reminders_pro_skipped`, `reminders_pro_unacknowledged`.
 - **Kommandon** (event `reminders_pro_command`): `{"cmd":"quick","title":"Pasta klar","minutes":10}`, `{"cmd":"done","token":"…"}`, `{"cmd":"trigger","id":3}`, `{"cmd":"pause","id":3,"days":2}`, `{"cmd":"resume","id":3}`.

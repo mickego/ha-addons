@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.0
+- **Own sensor per reminder:** tick "Create its own sensor in HA" under Options. You get `sensor.reminders_pro_<name>` whose state is the next occurrence (timestamp – shows e.g. "in 5 days" in the app and dashboards) with attributes `local`, `local_date`, `local_time`, `days_left`, `hours_until`, `upcoming` (next 5), `last_fired`, `paused_until` and more. Respects pause, skip-next and exceptions
+
 ## 1.1.0
 - **Own buttons in the mobile notification:** toggle / turn on / turn off an entity, start an automation, run a script, activate a scene, press a button entity, call any service, set an entity or fire an event. Optionally acknowledge the reminder on press. Choose which of Done · Snooze · Skip to keep (Android shows 3 buttons in total)
 - **Android TV / Fire TV notification** (Notifications for Android TV): duration, position, text size, transparency, colour, icon and image

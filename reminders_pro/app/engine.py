@@ -5,6 +5,7 @@ import itertools
 import json
 import logging
 import re
+import unicodedata
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
@@ -22,6 +23,7 @@ ALERT = ("push", "notify", "tv", "persistent", "tts", "sound")
 ACTION_TYPES = ALERT + ("service", "set_entity", "event")
 _LAST_PUB = {"ts": 0.0}
 _PUB_LOCK = asyncio.Lock()
+_SENSOR_MAP = {}          # rem_id -> entity_id (egna sensorer)
 
 
 def now() -> int:
@@ -219,6 +221,7 @@ def clean_opts(o):
         "repeat": {"enabled": bool(r.get("enabled")),
                    "every_min": max(1, min(int(r.get("every_min") or 5), 1440)),
                    "max": max(1, min(int(r.get("max") or 12), 1000))},
+        "sensor": bool(o.get("sensor")),
         "buttons": bool(o.get("buttons", True)),
         "std_buttons": [k for k in ("done", "snooze", "skip") if k in (o.get("std_buttons") or ["done", "snooze", "skip"])],
         "custom_buttons": clean_buttons(o.get("custom_buttons")),
@@ -430,7 +433,7 @@ def view(rem, cats, t, c=None):
     cat = cats.get(rem["category_id"])
     out = {**{k: rem[k] for k in ("id", "title", "note", "category_id", "rule", "actions", "opts", "enabled",
                                   "paused_until", "next_at", "last_fired", "fired_count")},
-           "status": st, "category": cat}
+           "status": st, "category": cat, "sensor_entity": _SENSOR_MAP.get(rem["id"])}
     if rem["rule"].get("count") and rem["next_at"]:
         try:
             out["remaining"] = recur.total_remaining(rem["rule"], tzinfo(), rem["next_at"])
@@ -1340,6 +1343,72 @@ def counts_sync():
         c.close()
 
 
+def _slug(title):
+    s = unicodedata.normalize("NFKD", str(title).lower()).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "_", s).strip("_")[:40] or "paminnelse"
+
+
+def own_sensors_sync(t):
+    """Egna sensorer för påminnelser med opts.sensor: [(entity_id, state, attrs)]."""
+    c = store.conn()
+    try:
+        cats = _cat_map(c)
+        rows = [rem_dict(r) for r in c.execute("select * from reminders order by id")]
+    finally:
+        c.close()
+    tz = tzinfo()
+    used, out = set(), []
+    for r in rows:
+        if not (r["opts"] or {}).get("sensor"):
+            continue
+        slug = _slug(r["title"])
+        eid = f"sensor.reminders_pro_{slug}"
+        if eid in used:
+            eid = f"{eid}_{r['id']}"
+        used.add(eid)
+        cat = cats.get(r["category_id"]) or {}
+        occ = []
+        if r["enabled"]:
+            for ts in itertools.islice(recur.iter_occurrences(r["rule"], tz, _live(r, t)), 8):
+                if ts >= t:
+                    occ.append(ts)
+                if len(occ) >= 5:
+                    break
+        iso = lambda ts: datetime.fromtimestamp(ts, timezone.utc).isoformat()
+        nxt = occ[0] if occ else None
+        attrs = {"friendly_name": r["title"], "icon": cat.get("icon") or "mdi:bell-ring", "device_class": "timestamp",
+                 "title": r["title"], "message": r["note"], "category": cat.get("name"), "color": cat.get("color"),
+                 "reminder_id": r["id"], "enabled": bool(r["enabled"]),
+                 "paused_until": iso(r["paused_until"]) if r["paused_until"] and r["paused_until"] > t else None,
+                 "last_fired": iso(r["last_fired"]) if r["last_fired"] else None, "fired_count": r["fired_count"],
+                 "upcoming": [iso(x) for x in occ]}
+        if nxt:
+            dn = datetime.fromtimestamp(nxt, tz)
+            attrs.update(local=dn.strftime("%Y-%m-%d %H:%M"), local_date=dn.strftime("%Y-%m-%d"), local_time=dn.strftime("%H:%M"),
+                         days_left=(dn.date() - datetime.fromtimestamp(t, tz).date()).days,
+                         hours_until=round((nxt - t) / 3600, 1), minutes_until=max(0, round((nxt - t) / 60)))
+        out.append((r["id"], eid, iso(nxt) if nxt else "unknown", attrs))
+    return out
+
+
+async def publish_own_sensors(t):
+    items = await asyncio.to_thread(own_sensors_sync, t)
+    new = {rid: eid for rid, eid, _, _ in items}
+    old = await asyncio.to_thread(setting_get_sync, "pub_sensors", {}) or {}
+    for rid, eid in old.items():
+        if new.get(int(rid)) != eid:
+            try:
+                await ha.delete_state(eid)
+            except Exception as e:
+                log.debug("ta bort %s: %s", eid, e)
+    for _, eid, st, attrs in items:
+        await ha.set_state(eid, st, attrs)
+    if {str(k): v for k, v in new.items()} != old:
+        await asyncio.to_thread(setting_set_sync, "pub_sensors", {str(k): v for k, v in new.items()})
+    _SENSOR_MAP.clear()
+    _SENSOR_MAP.update(new)
+
+
 async def publish_sensors():
     async with _PUB_LOCK:
         try:
@@ -1377,6 +1446,7 @@ async def publish_sensors():
             await ha.set_state("sensor.reminders_pro_last", iso(last["last_fired"]) if last else "unknown", {
                 "friendly_name": T("s_last"), "icon": "mdi:history", "device_class": "timestamp",
                 **({"title": last["title"], "reminder_id": last["id"]} if last else {})})
+            await publish_own_sensors(t)
             _LAST_PUB["ts"] = time.time()
         except Exception as e:
             log.warning("sensorer: %s", e)

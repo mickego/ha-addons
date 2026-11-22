@@ -139,6 +139,13 @@ async def set_state(entity_id: str, state, attributes: dict | None = None):
     await _req("POST", f"/states/{entity_id}", json={"state": str(state), "attributes": attributes or {}})
 
 
+async def delete_state(entity_id: str):
+    """Tar bort en virtuell entitet."""
+    if not TOKEN:
+        return
+    await _req("DELETE", f"/states/{entity_id}")
+
+
 async def clear_mobile(target: str, tag: str):
     """Tar bort en notis på mobilen (Companion-appen) via tag."""
     svc = target.split(".", 1)[1] if target.startswith("notify.") else target
