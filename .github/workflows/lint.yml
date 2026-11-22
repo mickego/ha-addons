@@ -3,8 +3,11 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        addon: [iptv_epg_reminder, reminders_pro]
     steps:
       - uses: actions/checkout@v4
       - uses: frenck/action-addon-linter@v2
         with:
-          path: ./iptv_epg_reminder
+          path: ./${{ matrix.addon }}
