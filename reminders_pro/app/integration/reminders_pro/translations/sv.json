@@ -1,0 +1,7 @@
+{
+  "config": {
+    "step": {"user": {"title": "Reminders Pro", "description": "Adress till add-onet Påminnelser Pro (förifylld).", "data": {"url": "Add-onets adress"}}},
+    "error": {"cannot_connect": "Kan inte nå add-onet. Körs det?"},
+    "abort": {"single_instance_allowed": "Redan konfigurerad."}
+  }
+}

@@ -1,0 +1,19 @@
+configuration:
+  language:
+    name: Sprache
+    description: Oberflächensprache beim ersten Start (im Panel umschaltbar).
+  tts_entity:
+    name: Standard-TTS-Engine
+    description: Z. B. tts.home_assistant_cloud. Auch pro Erinnerung oder in den Einstellungen wählbar.
+  tts_language:
+    name: Sprachausgabe-Sprache
+    description: Sprachcode für gesprochenen Text, z. B. de oder en. Leer = wie die Oberfläche.
+  default_snooze_min:
+    name: Standard-Schlummern (Minuten)
+    description: Startwert für die Schlummer-Taste in mobilen Benachrichtigungen.
+  install_integration:
+    name: Kalender-Integration installieren
+    description: Kopiert die Integration „Reminders Pro“ (calendar.reminders_pro) in den HA-Konfigurationsordner. Beim ersten Mal ist ein HA-Neustart nötig.
+  install_card:
+    name: Dashboard-Karten installieren
+    description: Kopiert die Karten nach /config/www und registriert die Ressource automatisch.

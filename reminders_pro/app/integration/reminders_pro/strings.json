@@ -1,0 +1,7 @@
+{
+  "config": {
+    "step": {"user": {"title": "Reminders Pro", "description": "Address of the Reminders Pro add-on (pre-filled).", "data": {"url": "Add-on address"}}},
+    "error": {"cannot_connect": "Cannot reach the add-on. Is it running?"},
+    "abort": {"single_instance_allowed": "Already set up."}
+  }
+}

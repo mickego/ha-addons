@@ -1,0 +1,19 @@
+configuration:
+  language:
+    name: Kieli
+    description: Käyttöliittymän kieli ensimmäisellä käynnistyksellä (vaihdettavissa paneelissa).
+  tts_entity:
+    name: Oletus-TTS-moottori
+    description: Esim. tts.home_assistant_cloud. Valittavissa myös muistutuskohtaisesti ja asetuksissa.
+  tts_language:
+    name: Puheen kieli
+    description: Puhutun tekstin kielikoodi, esim. fi tai en. Tyhjä = sama kuin käyttöliittymä.
+  default_snooze_min:
+    name: Oletustorkutus (minuuttia)
+    description: Torkutuspainikkeen alkuarvo mobiili-ilmoituksissa.
+  install_integration:
+    name: Asenna kalenteri-integraatio
+    description: Kopioi ”Reminders Pro” -integraation (calendar.reminders_pro) HA:n asetuskansioon. Ensimmäisellä kerralla HA on käynnistettävä uudelleen.
+  install_card:
+    name: Asenna kojelautakortit
+    description: Kopioi kortit kansioon /config/www ja rekisteröi resurssin automaattisesti.

@@ -1,0 +1,19 @@
+configuration:
+  language:
+    name: Språk
+    description: Språk i grensesnittet ved første oppstart (kan byttes i panelet).
+  tts_entity:
+    name: Standard TTS-motor
+    description: F.eks. tts.home_assistant_cloud. Kan også velges per påminnelse og under Innstillinger.
+  tts_language:
+    name: Stemmespråk
+    description: Språkkode for opplest tekst, f.eks. nb eller en. Tomt = samme som grensesnittet.
+  default_snooze_min:
+    name: Standard utsettelse (minutter)
+    description: Startverdi for Utsett-knappen i mobilvarsler.
+  install_integration:
+    name: Installer kalenderintegrasjonen
+    description: Kopierer integrasjonen «Reminders Pro» (calendar.reminders_pro) til Home Assistants konfigurasjonsmappe. Krever omstart av HA første gang.
+  install_card:
+    name: Installer dashbordkortene
+    description: Kopierer kortene til /config/www og legger til ressursen automatisk.

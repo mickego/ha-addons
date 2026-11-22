@@ -1,0 +1,19 @@
+configuration:
+  language:
+    name: Language
+    description: Interface language at first start (can be switched in the panel).
+  tts_entity:
+    name: Default TTS engine
+    description: E.g. tts.home_assistant_cloud. Can also be chosen per reminder and under Settings.
+  tts_language:
+    name: Voice language
+    description: Language code for spoken text, e.g. sv or en. Empty = same as the interface.
+  default_snooze_min:
+    name: Default snooze (minutes)
+    description: Initial value for the Snooze button in mobile notifications.
+  install_integration:
+    name: Install the calendar integration
+    description: Copies the “Reminders Pro” integration (calendar.reminders_pro) to the Home Assistant configuration folder. Needs an HA restart the first time.
+  install_card:
+    name: Install the dashboard cards
+    description: Copies the cards to /config/www and registers the resource automatically.

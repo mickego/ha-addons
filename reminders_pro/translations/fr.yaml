@@ -1,0 +1,19 @@
+configuration:
+  language:
+    name: Langue
+    description: Langue de l'interface au premier démarrage (modifiable dans le panneau).
+  tts_entity:
+    name: Moteur TTS par défaut
+    description: Ex. tts.home_assistant_cloud. Aussi réglable par rappel et dans les réglages.
+  tts_language:
+    name: Langue de la voix
+    description: Code de langue du texte lu, ex. fr ou en. Vide = comme l'interface.
+  default_snooze_min:
+    name: Report par défaut (minutes)
+    description: Valeur initiale du bouton Reporter dans les notifications mobiles.
+  install_integration:
+    name: Installer l'intégration calendrier
+    description: Copie l'intégration « Reminders Pro » (calendar.reminders_pro) dans le dossier de configuration de HA. Un redémarrage de HA est nécessaire la première fois.
+  install_card:
+    name: Installer les cartes de tableau de bord
+    description: Copie les cartes dans /config/www et enregistre la ressource automatiquement.

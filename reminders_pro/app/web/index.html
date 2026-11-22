@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reminders Pro</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--fg:#1b2333;--mut:#667089;--line:#e3e8f2;--pri:#3b6ef5;--pri2:#2a56d0;--ok:#1f9d55;--warn:#d98a00;--bad:#d64545;--chip:#eef2fb;--shadow:0 1px 3px rgba(20,30,60,.08),0 4px 14px rgba(20,30,60,.05);--r:14px}
+@media (prefers-color-scheme:dark){:root{--bg:#10141c;--card:#181e2a;--fg:#e8ecf5;--mut:#9aa4bb;--line:#2a3347;--pri:#6c93ff;--pri2:#8ba9ff;--chip:#222b3d;--shadow:0 1px 3px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}html,body{margin:0}body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:980px;margin:0 auto;padding:14px 14px 90px}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+header h1{font-size:20px;margin:0;flex:1;min-width:140px;display:flex;align-items:center;gap:8px}
+.logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#3b6ef5,#7a4df0);display:grid;place-items:center;color:#fff;font-size:16px}
+select,input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:38px;max-width:100%}
+textarea{width:100%;min-height:70px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--pri) 55%,transparent);border-color:var(--pri)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;cursor:pointer;min-height:38px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--pri)}.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}.btn.pri:hover{background:var(--pri2)}
+.btn.bad{color:var(--bad)}.btn.sm{padding:4px 9px;min-height:30px;font-size:13px}.btn.ghost{background:transparent}
+.tabs{display:flex;gap:4px;overflow:auto;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tab{padding:9px 14px;cursor:pointer;border:0;background:none;color:var(--mut);border-bottom:3px solid transparent;white-space:nowrap}
+.tab.on{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:0}
+.mut{color:var(--mut)}.small{font-size:13px}.tiny{font-size:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:3px 11px;cursor:pointer;font-size:13px;user-select:none;display:inline-flex;gap:5px;align-items:center}
+.chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.chip .x{opacity:.7;margin-left:2px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.rem{display:flex;gap:12px;align-items:flex-start;border-left:5px solid var(--cc,var(--pri))}
+.rem h3{margin:0;font-size:16px}.rem.off{opacity:.6}
+.badge{font-size:11.5px;padding:1px 8px;border-radius:999px;background:var(--chip);color:var(--mut);border:1px solid var(--line)}
+.badge.ok{color:var(--ok)}.badge.warn{color:var(--warn)}.badge.bad{color:var(--bad)}
+.acts{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.switch{position:relative;width:42px;height:24px;flex:none}.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:#b8c0d4;border-radius:24px;transition:.2s;cursor:pointer}
+.switch span:before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked+span{background:var(--ok)}.switch input:checked+span:before{transform:translateX(18px)}
+.banner{background:color-mix(in srgb,var(--warn) 14%,var(--card));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));border-radius:var(--r);padding:10px 14px;margin-bottom:12px}
+.quick{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.quick input[type=text]{flex:1;min-width:180px}
+.day{font-weight:600;margin:16px 0 6px;color:var(--mut);text-transform:capitalize}
+.ag{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.ag:first-of-type{border-top:0}.ag .tm{width:52px;font-variant-numeric:tabular-nums;font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(10,15,30,.55);z-index:50;display:flex;justify-content:center;align-items:flex-start;overflow:auto;padding:16px}
+.sheet{background:var(--bg);border-radius:18px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:14px 16px;position:sticky;top:0;background:var(--bg);border-radius:18px 18px 0 0;z-index:2;border-bottom:1px solid var(--line)}
+.sheet-h h2{margin:0;font-size:18px;flex:1}.sheet-b{padding:14px 16px}
+.sheet-f{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);border-radius:0 0 18px 18px;flex-wrap:wrap}
+.sec{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:18px 0 8px;font-weight:700}
+label.f{display:block;margin:10px 0 4px;font-size:13px;color:var(--mut)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:8px 14px;cursor:pointer}.seg button.on{background:var(--pri);color:#fff}
+.sub{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.prev{background:var(--card);border:1px dashed var(--pri);border-radius:12px;padding:10px 12px;margin-top:12px}
+.prev ol{margin:6px 0 0;padding-left:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px 14px;font-variant-numeric:tabular-nums}
+.prev .sum{font-weight:600;color:var(--pri)}
+.err{color:var(--bad);font-size:13px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#222c42;color:#fff;padding:10px 18px;border-radius:12px;z-index:99;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:90vw}
+.toast.bad{background:var(--bad)}
+.tg{max-height:160px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--card)}
+.tg label{display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer}
+.help h2{font-size:17px;margin:20px 0 6px}.help table{border-collapse:collapse;width:100%;font-size:14px}.help td,.help th{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}.help code{background:var(--chip);padding:1px 6px;border-radius:6px;font-size:13px}
+.hist{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--line);font-size:14px}.hist:first-child{border-top:0}.hist .t{color:var(--mut);width:120px;flex:none;font-variant-numeric:tabular-nums;font-size:13px}
+@media (max-width:560px){.wrap{padding:10px 10px 90px}.overlay{padding:0}.sheet{border-radius:0;min-height:100vh}.sheet-h,.sheet-f{border-radius:0}.hist .t{width:88px}}
+</style></head><body><div class="wrap">
+<header><h1><span class="logo">🔔</span><span id="apptitle">Reminders Pro</span></h1>
+<select id="langsel" title="Language"><option value="sv">Svenska</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="nb">Norsk</option><option value="fi">Suomi</option></select>
+<button class="btn pri" id="newbtn"></button></header>
+<div id="banner"></div>
+<div class="tabs" id="tabs"></div>
+<div id="view"></div>
+</div><div id="modal"></div><div id="toast"></div>
+<script>
+const L = {
+sv: {
+app:"Påminnelser Pro", new:"+ Ny påminnelse", save:"Spara", cancel:"Avbryt", del:"Ta bort", edit:"Ändra", test:"Testa", dup:"Duplicera", close:"Stäng", add:"Lägg till", search:"Sök…", all:"Alla", loading:"Laddar…", saved:"Sparat", deleted:"Borttagen", confirm_del:"Ta bort påminnelsen ”{x}”?", tested:"Testnotis skickad",
+tab_rem:"Påminnelser", tab_agenda:"Agenda", tab_hist:"Historik", tab_set:"Inställningar", tab_help:"Hjälp",
+empty:"Inga påminnelser ännu. Skapa din första med knappen ovan eller använd snabbpåminnelsen.", st_active:"Aktiv", st_paused:"Pausad", st_off:"Av", st_ended:"Slut", next:"Nästa", in_:"om", none_more:"Inga fler tillfällen", remaining:"{n} kvar", fired_n:"Utlöst {n} ggr",
+pause:"Pausa", resume:"Återuppta", skip_next:"Hoppa över nästa", skipped:"Nästa tillfälle hoppas över ({x})", pause_1:"1 dag", pause_3:"3 dagar", pause_7:"7 dagar", pause_30:"30 dagar", enable:"Slå på", disable:"Slå av", paused_until:"Pausad till {x}",
+quick:"Snabbpåminnelse", quick_ph:"Vad ska jag påminna om?", quick_min:"om {n} min", unack:"Väntar på kvittens", done:"Klart", snooze:"Snooze", skip:"Hoppa över", snooze_n:"Snooze {n} min", sent_n:"skickad {n} ggr",
+ed_new:"Ny påminnelse", ed_edit:"Ändra påminnelse", f_title:"Rubrik", f_note:"Text (valfri)", f_cat:"Kategori", f_cat_none:"Ingen kategori", f_cat_new:"Ny kategori…",
+s_what:"Vad", s_when:"När", s_how:"Hur ska jag meddelas?", s_opts:"Alternativ",
+w_once:"En gång", w_repeat:"Återkommande", every:"Var", u_minute:"minut", u_hour:"timme", u_day:"dag", u_week:"vecka", u_month:"månad", u_year:"år", up_minute:"minuter", up_hour:"timmar", up_day:"dagar", up_week:"veckor", up_month:"månader", up_year:"år",
+starts:"Börjar", start_time:"Klockan", ends:"Slutar", e_never:"Aldrig", e_date:"Sista dag", e_count:"Efter antal gånger", times:"Klockslag", add_time:"Lägg till klockslag", series:"Upprepade klockslag", add_series:"Lägg till serie", series_every:"var", series_min:"min mellan", from:"från", to:"till", window:"Bara mellan", window_hint:"Tomt = hela dygnet", wd_filter:"Bara dessa dagar (valfritt)", wd_req:"Veckodagar", md_label:"Dag i månaden", md_last:"sista", m_days:"Bestämda datum", m_nth:"Veckodag (t.ex. sista fredagen)", nth_1:"första", nth_2:"andra", nth_3:"tredje", nth_4:"fjärde", nth_5:"femte", nth_m1:"sista", wd_any:"dag", wd_work:"vardag", wd_weekend:"helgdag", months_label:"Månader", exceptions:"Undantagsdatum", add_exc:"Lägg till undantag", overflow:"Om dagen saknas i månaden", of_clamp:"använd sista dagen", of_skip:"hoppa över månaden",
+preview:"Nästa tillfällen", preview_none:"Inga tillfällen med dessa inställningar", left_after:"{n} kvar från och med nu",
+how_hint:"Lägg till ett eller flera sätt. Alla körs när påminnelsen utlöses.", add_act:"+ Lägg till sätt", a_push:"Mobilpush (med knappar)", a_notify:"Valfri notify-tjänst (Telegram, e-post …)", a_persistent:"Persistent notis i HA", a_tts:"Röst (TTS)", a_sound:"Ljud", a_service:"Anropa tjänst", a_set_entity:"Sätt entitet", a_event:"Skicka event",
+targets:"Mottagare", targets_none:"Inga hittades – kontrollera att HA är ansluten", msg:"Meddelande (tomt = rubrikens text)", title_ov:"Rubrik (tomt = påminnelsens)", tts_text:"Text som läses upp", engine:"TTS-motor", engine_def:"Standard", lang:"Språk (valfritt)", volume:"Volym %", source:"Källa", src_file:"Fil i /media", src_url:"Webbadress", value:"Värde", service:"Tjänst (domän.tjänst)", data:"Data (JSON)", entity:"Entitet", ev_name:"Eventnamn", act_repeat:"Upprepa vid ”upprepa tills kvitterat”", act_enabled:"På", var_insert:"Variabler", var_entity:"Entitetsvärde…",
+o_repeat:"Upprepa tills kvitterat", o_every:"var", o_max:"högst", o_times:"gånger", o_buttons:"Knappar i mobilnotisen (Klart · Snooze · Hoppa över)", o_snooze:"Snooze (minuter)", o_quiet:"Skicka även under tysta timmar", o_home:"Bara om någon är hemma", o_urgent:"Brådskande (larmkanal / kritisk notis)", o_dur:"Längd i kalendern (min)", o_autodel:"Ta bort efter utlösning (engångs)", o_grace:"Skicka försenad inom (min)", o_url:"Öppna vid tryck (t.ex. /lovelace/0)",
+set_quiet:"Tysta timmar", quiet_on:"Använd tysta timmar", quiet_from:"Från", quiet_to:"Till", quiet_mode:"Under tysta timmar", q_delay:"skjut upp till de är slut", q_skip:"hoppa över", set_home:"Vem räknas som ”hemma”?", set_home_hint:"Välj personer. Tomt = alltid hemma.", set_targets:"Standardmottagare för snabbpåminnelser", set_tts:"Standardröst", set_grace:"Skicka försenad påminnelse om den missats med högst (min)", set_snooze:"Standard-snooze (min)", set_choices:"Snooze-val i kort", set_hist:"Spara historik (dagar)", set_cat:"Kategorier", cat_name:"Namn", cat_color:"Färg",
+set_int:"Kalender och dashboardkort", int_cal:"Kalenderentitet", int_card:"Dashboardkort", int_ok:"Installerad", int_old:"Gammal version – uppdatera", int_missing:"Inte installerad", int_restart:"Starta om Home Assistant, gå sedan till Inställningar → Enheter och tjänster → Lägg till integration → ”Reminders Pro”.", int_install:"Installera / uppdatera nu", int_unmounted:"Add-onet har inte åtkomst till HA:s konfigurationsmapp. Ladda ner filerna nedan och följ avsnitt 5 i dokumentationen: packa upp zip-filen i din konfigurationsmapp, lägg kortfilen i /config/www, starta om HA.", int_dl_int:"Ladda ner integrationen (zip)", int_dl_card:"Ladda ner kortfilen", int_url:"Add-onets adress för integrationen", int_resource:"Kortets resurs lades till automatiskt", int_resource_no:"Lägg till /local/reminders-pro-cards.js som JavaScript-modul under Dashboards → Resurser",
+set_data:"Data", export:"Exportera", import:"Importera", imp_merge:"Lägg till", imp_replace:"Ersätt allt", imp_done:"{n} påminnelser importerade", clear_hist:"Rensa historik", set_saved:"Inställningar sparade",
+h_fired:"Utlöst", h_repeat:"Upprepad", h_done:"Klart", h_skipped:"Överhoppad", h_snoozed:"Snoozad", h_missed:"Missad", h_merged:"Slogs ihop", h_quiet_skip:"Tysta timmar – hoppade över", h_quiet_delay:"Tysta timmar – uppskjuten", h_home_skip:"Ingen hemma – hoppade över", h_unacked:"Ingen kvittens", h_error:"Fel", h_skip_next:"Nästa tillfälle struket", h_empty:"Ingen historik ännu",
+err_title:"Ange en rubrik", err_freq:"Ogiltig frekvens", err_interval:"Ogiltigt intervall", err_start:"Ange startdatum", err_date:"Ogiltigt datum", err_time:"Ogiltigt klockslag", err_end_before_start:"Slutet ligger före starten", err_count:"Ogiltigt antal", err_series:"Ogiltig serie (från ≤ till, minst 1 min)", err_no_times:"Lägg till minst ett klockslag", err_weekday:"Ogiltig veckodag", err_monthday:"Ogiltig dag i månaden", err_nth:"Ogiltigt val", err_month:"Ogiltig månad", err_rule:"Ogiltig regel", err_action_type:"Okänd åtgärd", err_service:"Tjänsten måste skrivas som domän.tjänst", err_entity:"Entiteten måste skrivas som domän.namn", err_event:"Ogiltigt eventnamn", err_json:"Datat är inte giltig JSON", err_name:"Ange ett namn", err_color:"Ogiltig färg", err_not_found:"Hittades inte", err_import_format:"Filen är inte en export från Påminnelser Pro", err_bad_request:"Ogiltig förfrågan", err_internal:"Internt fel", forbidden:"Åtkomst nekad",
+d_once:"En gång", d_each1_minute:"Varje minut", d_each1_hour:"Varje timme", d_each1_day:"Varje dag", d_each1_week:"Varje vecka", d_each1_month:"Varje månad", d_each1_year:"Varje år", d_eachn:"Var {n}:e {u}", d_at:"kl", d_every_min:"var {n}:e min", d_between:"{a}–{b}", d_onday:"den", d_last:"sista", d_from:"från", d_until:"till", d_count:"{n} gånger", d_exc:"{n} undantag", d_clock:"{x}",
+help_note:"", help:`
+<h2>Kom igång</h2>
+<p>Tryck <b>+ Ny påminnelse</b>, skriv en rubrik, välj <b>När</b> och <b>Hur</b> du vill meddelas och spara. Under ”Nästa tillfällen” ser du direkt vilka tider som gäller.</p>
+<h2>Exempel på När</h2>
+<table><tr><th>Önskemål</th><th>Inställning</th></tr>
+<tr><td>Var 3:e dag 08:00, 12:00 och 18:00</td><td>Återkommande · Var 3 dagar · lägg till tre klockslag</td></tr>
+<tr><td>Varannan vecka måndag och torsdag</td><td>Var 2 veckor · markera Mån och Tors</td></tr>
+<tr><td>Varannan månad den 15:e</td><td>Var 2 månader · Bestämda datum · 15</td></tr>
+<tr><td>Sista fredagen i månaden</td><td>Var 1 månad · Veckodag · sista · fredag</td></tr>
+<tr><td>Första måndagen i månaden</td><td>Veckodag · första · måndag</td></tr>
+<tr><td>Varje år 3 mars</td><td>Var 1 år · Månader: mars · Bestämda datum: 3</td></tr>
+<tr><td>Var 20:e minut mellan 08 och 17</td><td>Var 20 minuter · Bara mellan 08:00 och 17:00 (eller Var 1 dag med en serie)</td></tr>
+<tr><td>Bara vardagar</td><td>Var 1 dag · Bara dessa dagar: Mån–Fre</td></tr>
+<tr><td>Sista vardagen i månaden</td><td>Veckodag · sista · vardag</td></tr></table>
+<p>Start, slut, ”efter N gånger”, undantagsdatum och paus finns under <b>När</b>. Undantagna och överhoppade datum räknas inte mot ”efter N gånger”.</p>
+<p><b>Sommar- och vintertid:</b> klockslag följer väggklockan. Ett klockslag som saknas när klockan går fram (t.ex. 02:30) skickas 03:30; ett som finns två gånger när klockan går tillbaka skickas en gång. ”Var N:e minut/timme” räknar verklig förfluten tid.</p>
+<h2>Sätt att meddelas</h2>
+<ul><li><b>Mobilpush</b> – med knapparna Klart, Snooze och Hoppa över (Companion-appen).</li>
+<li><b>Valfri notify-tjänst</b> – t.ex. Telegram, e-post, Alexa, Signal. Extra data som JSON, t.ex. <code>{"parse_mode":"html"}</code>.</li>
+<li><b>Persistent notis</b>, <b>röst</b> (TTS till en mediaspelare), <b>ljud</b> (fil i /media eller webbadress).</li>
+<li><b>Anropa tjänst</b>, <b>sätt entitet</b> och <b>skicka event</b> för egna automationer.</li></ul>
+<h2>Egna texter och variabler</h2>
+<p><code>{title}</code> <code>{message}</code> <code>{date}</code> <code>{time}</code> <code>{weekday}</code> <code>{n}</code> (tillfälle nr) <code>{remaining}</code> <code>{next}</code> <code>{category}</code> <code>{attempt}</code>. Värden från Home Assistant: <code>{state:sensor.temp}</code>, <code>{attr:climate.x:current_temperature}</code>, <code>{name:sensor.temp}</code>.</p>
+<h2>Upprepa tills kvitterat</h2>
+<p>Slå på under Alternativ. Notisen skickas igen var N:e minut (högst M gånger) tills du trycker <b>Klart</b>, <b>Snooze</b> eller <b>Hoppa över</b> – i mobilen, här i panelen eller på dashboardkortet. Utan kvittens avslutas serien och eventet <code>reminders_pro_unacknowledged</code> skickas.</p>
+<h2>Tysta timmar och ”hemma”</h2>
+<p>Under Inställningar. Under tysta timmar skjuts påminnelsen antingen upp tills de är slut eller hoppas över. ”Bara om någon är hemma” använder de personer du valt.</p>
+<h2>Integration</h2>
+<ul><li><b>Kalender:</b> <code>calendar.reminders_pro</code> (lägg till integrationen ”Reminders Pro” – se Inställningar).</li>
+<li><b>Sensorer:</b> <code>sensor.reminders_pro_next</code>, <code>_today</code>, <code>_active</code>, <code>_unacknowledged</code>, <code>_last</code> och <code>binary_sensor.reminders_pro_attention</code>.</li>
+<li><b>Events:</b> <code>reminders_pro_fired</code>, <code>_done</code>, <code>_snoozed</code>, <code>_skipped</code>, <code>_unacknowledged</code>.</li>
+<li><b>Kommandon</b> till add-onet: event <code>reminders_pro_command</code> med t.ex. <code>{"cmd":"quick","title":"Pasta klar","minutes":10}</code>, <code>{"cmd":"done","token":"…"}</code>, <code>{"cmd":"trigger","id":3}</code>, <code>{"cmd":"pause","id":3,"days":2}</code>.</li>
+<li><b>Dashboardkort:</b> Reminders Pro: nästa, idag, kommande, kvittens, snabb (fungerar även via Nabu Casa).</li></ul>
+<h2>Felsökning</h2>
+<p>Inget kommer fram? Tryck <b>Testa</b> på påminnelsen och titta i <b>Historik</b>. Mottagarlistan tom betyder att add-onet inte når HA. Notiser och tid följer Home Assistants tidszon.</p>`
+},
+en: {
+app:"Reminders Pro", new:"+ New reminder", save:"Save", cancel:"Cancel", del:"Delete", edit:"Edit", test:"Test", dup:"Duplicate", close:"Close", add:"Add", search:"Search…", all:"All", loading:"Loading…", saved:"Saved", deleted:"Deleted", confirm_del:"Delete the reminder “{x}”?", tested:"Test notification sent",
+tab_rem:"Reminders", tab_agenda:"Agenda", tab_hist:"History", tab_set:"Settings", tab_help:"Help",
+empty:"No reminders yet. Create your first with the button above or use the quick reminder.", st_active:"Active", st_paused:"Paused", st_off:"Off", st_ended:"Ended", next:"Next", in_:"in", none_more:"No more occurrences", remaining:"{n} left", fired_n:"Fired {n} times",
+pause:"Pause", resume:"Resume", skip_next:"Skip next", skipped:"Next occurrence skipped ({x})", pause_1:"1 day", pause_3:"3 days", pause_7:"7 days", pause_30:"30 days", enable:"Turn on", disable:"Turn off", paused_until:"Paused until {x}",
+quick:"Quick reminder", quick_ph:"What should I remind you about?", quick_min:"in {n} min", unack:"Waiting for acknowledgement", done:"Done", snooze:"Snooze", skip:"Skip", snooze_n:"Snooze {n} min", sent_n:"sent {n}×",
+ed_new:"New reminder", ed_edit:"Edit reminder", f_title:"Title", f_note:"Text (optional)", f_cat:"Category", f_cat_none:"No category", f_cat_new:"New category…",
+s_what:"What", s_when:"When", s_how:"How should I notify you?", s_opts:"Options",
+w_once:"Once", w_repeat:"Repeating", every:"Every", u_minute:"minute", u_hour:"hour", u_day:"day", u_week:"week", u_month:"month", u_year:"year", up_minute:"minutes", up_hour:"hours", up_day:"days", up_week:"weeks", up_month:"months", up_year:"years",
+starts:"Starts", start_time:"At", ends:"Ends", e_never:"Never", e_date:"Last day", e_count:"After a number of times", times:"Times of day", add_time:"Add time", series:"Repeated times", add_series:"Add series", series_every:"every", series_min:"min between", from:"from", to:"to", window:"Only between", window_hint:"Empty = all day", wd_filter:"Only these days (optional)", wd_req:"Weekdays", md_label:"Day of the month", md_last:"last", m_days:"Specific dates", m_nth:"Weekday (e.g. last Friday)", nth_1:"first", nth_2:"second", nth_3:"third", nth_4:"fourth", nth_5:"fifth", nth_m1:"last", wd_any:"day", wd_work:"weekday (Mon–Fri)", wd_weekend:"weekend day", months_label:"Months", exceptions:"Exception dates", add_exc:"Add exception", overflow:"If the day doesn’t exist in a month", of_clamp:"use the last day", of_skip:"skip that month",
+preview:"Next occurrences", preview_none:"No occurrences with these settings", left_after:"{n} left from now",
+how_hint:"Add one or more ways. All of them run when the reminder fires.", add_act:"+ Add a way", a_push:"Mobile push (with buttons)", a_notify:"Any notify service (Telegram, e-mail …)", a_persistent:"Persistent notification in HA", a_tts:"Voice (TTS)", a_sound:"Sound", a_service:"Call a service", a_set_entity:"Set an entity", a_event:"Fire an event",
+targets:"Recipients", targets_none:"None found – check that HA is connected", msg:"Message (empty = reminder text)", title_ov:"Title (empty = reminder title)", tts_text:"Text to speak", engine:"TTS engine", engine_def:"Default", lang:"Language (optional)", volume:"Volume %", source:"Source", src_file:"File in /media", src_url:"Web address", value:"Value", service:"Service (domain.service)", data:"Data (JSON)", entity:"Entity", ev_name:"Event name", act_repeat:"Repeat when “repeat until acknowledged” is on", act_enabled:"On", var_insert:"Variables", var_entity:"Entity value…",
+o_repeat:"Repeat until acknowledged", o_every:"every", o_max:"at most", o_times:"times", o_buttons:"Buttons in the mobile notification (Done · Snooze · Skip)", o_snooze:"Snooze (minutes)", o_quiet:"Also send during quiet hours", o_home:"Only if someone is home", o_urgent:"Urgent (alarm channel / critical alert)", o_dur:"Length in calendar (min)", o_autodel:"Delete after it fires (one-off)", o_grace:"Send late within (min)", o_url:"Open on tap (e.g. /lovelace/0)",
+set_quiet:"Quiet hours", quiet_on:"Use quiet hours", quiet_from:"From", quiet_to:"To", quiet_mode:"During quiet hours", q_delay:"postpone until they end", q_skip:"skip", set_home:"Who counts as “home”?", set_home_hint:"Pick people. Empty = always home.", set_targets:"Default recipients for quick reminders", set_tts:"Default voice", set_grace:"Send a missed reminder late by at most (min)", set_snooze:"Default snooze (min)", set_choices:"Snooze choices on cards", set_hist:"Keep history (days)", set_cat:"Categories", cat_name:"Name", cat_color:"Colour",
+set_int:"Calendar and dashboard cards", int_cal:"Calendar entity", int_card:"Dashboard cards", int_ok:"Installed", int_old:"Old version – update", int_missing:"Not installed", int_restart:"Restart Home Assistant, then go to Settings → Devices & services → Add integration → “Reminders Pro”.", int_install:"Install / update now", int_unmounted:"The add-on has no access to the HA configuration folder. Download the files below and follow section 5 of the documentation: unzip into your configuration folder, put the card file in /config/www, restart HA.", int_dl_int:"Download the integration (zip)", int_dl_card:"Download the card file", int_url:"Add-on address used by the integration", int_resource:"Card resource was added automatically", int_resource_no:"Add /local/reminders-pro-cards.js as a JavaScript module under Dashboards → Resources",
+set_data:"Data", export:"Export", import:"Import", imp_merge:"Add", imp_replace:"Replace all", imp_done:"{n} reminders imported", clear_hist:"Clear history", set_saved:"Settings saved",
+h_fired:"Fired", h_repeat:"Repeated", h_done:"Done", h_skipped:"Skipped", h_snoozed:"Snoozed", h_missed:"Missed", h_merged:"Merged", h_quiet_skip:"Quiet hours – skipped", h_quiet_delay:"Quiet hours – postponed", h_home_skip:"Nobody home – skipped", h_unacked:"No acknowledgement", h_error:"Error", h_skip_next:"Next occurrence removed", h_empty:"No history yet",
+err_title:"Enter a title", err_freq:"Invalid frequency", err_interval:"Invalid interval", err_start:"Enter a start date", err_date:"Invalid date", err_time:"Invalid time", err_end_before_start:"The end is before the start", err_count:"Invalid number", err_series:"Invalid series (from ≤ to, at least 1 min)", err_no_times:"Add at least one time of day", err_weekday:"Invalid weekday", err_monthday:"Invalid day of month", err_nth:"Invalid choice", err_month:"Invalid month", err_rule:"Invalid rule", err_action_type:"Unknown action", err_service:"Service must be written as domain.service", err_entity:"Entity must be written as domain.name", err_event:"Invalid event name", err_json:"The data is not valid JSON", err_name:"Enter a name", err_color:"Invalid colour", err_not_found:"Not found", err_import_format:"The file is not a Reminders Pro export", err_bad_request:"Invalid request", err_internal:"Internal error", forbidden:"Access denied",
+d_once:"Once", d_each1_minute:"Every minute", d_each1_hour:"Every hour", d_each1_day:"Every day", d_each1_week:"Every week", d_each1_month:"Every month", d_each1_year:"Every year", d_eachn:"Every {n} {up}", d_at:"at", d_every_min:"every {n} min", d_between:"{a}–{b}", d_onday:"on day", d_last:"last", d_from:"from", d_until:"until", d_count:"{n} times", d_exc:"{n} exceptions", d_clock:"{x}",
+help_note:"", help:`
+<h2>Getting started</h2>
+<p>Press <b>+ New reminder</b>, type a title, choose <b>When</b> and <b>How</b> you want to be notified, and save. “Next occurrences” shows the exact times right away.</p>
+<h2>Examples for When</h2>
+<table><tr><th>You want</th><th>Setting</th></tr>
+<tr><td>Every 3rd day at 08:00, 12:00 and 18:00</td><td>Repeating · Every 3 days · add three times</td></tr>
+<tr><td>Every other week on Monday and Thursday</td><td>Every 2 weeks · tick Mon and Thu</td></tr>
+<tr><td>Every other month on the 15th</td><td>Every 2 months · Specific dates · 15</td></tr>
+<tr><td>Last Friday of the month</td><td>Every 1 month · Weekday · last · Friday</td></tr>
+<tr><td>First Monday of the month</td><td>Weekday · first · Monday</td></tr>
+<tr><td>Every year on 3 March</td><td>Every 1 year · Months: March · Specific dates: 3</td></tr>
+<tr><td>Every 20 minutes between 08 and 17</td><td>Every 20 minutes · Only between 08:00 and 17:00 (or Every 1 day with a series)</td></tr>
+<tr><td>Weekdays only</td><td>Every 1 day · Only these days: Mon–Fri</td></tr>
+<tr><td>Last weekday of the month</td><td>Weekday · last · weekday (Mon–Fri)</td></tr></table>
+<p>Start, end, “after N times”, exception dates and pause are under <b>When</b>. Exception and skipped dates do not count towards “after N times”.</p>
+<p><b>Daylight saving time:</b> times of day follow the wall clock. A time that does not exist when clocks spring forward (e.g. 02:30) fires at 03:30; a time that occurs twice when clocks fall back fires once. “Every N minutes/hours” counts real elapsed time.</p>
+<h2>Ways to be notified</h2>
+<ul><li><b>Mobile push</b> – with Done, Snooze and Skip buttons (Companion app).</li>
+<li><b>Any notify service</b> – e.g. Telegram, e-mail, Alexa, Signal. Extra data as JSON, e.g. <code>{"parse_mode":"html"}</code>.</li>
+<li><b>Persistent notification</b>, <b>voice</b> (TTS on a media player), <b>sound</b> (file in /media or a web address).</li>
+<li><b>Call a service</b>, <b>set an entity</b> and <b>fire an event</b> for your own automations.</li></ul>
+<h2>Custom text and variables</h2>
+<p><code>{title}</code> <code>{message}</code> <code>{date}</code> <code>{time}</code> <code>{weekday}</code> <code>{n}</code> (occurrence no.) <code>{remaining}</code> <code>{next}</code> <code>{category}</code> <code>{attempt}</code>. Home Assistant values: <code>{state:sensor.temp}</code>, <code>{attr:climate.x:current_temperature}</code>, <code>{name:sensor.temp}</code>.</p>
+<h2>Repeat until acknowledged</h2>
+<p>Turn it on under Options. The notification is sent again every N minutes (at most M times) until you press <b>Done</b>, <b>Snooze</b> or <b>Skip</b> – on your phone, in this panel or on the dashboard card. Without acknowledgement the series ends and the event <code>reminders_pro_unacknowledged</code> is fired.</p>
+<h2>Quiet hours and “home”</h2>
+<p>Under Settings. During quiet hours a reminder is either postponed until they end or skipped. “Only if someone is home” uses the people you picked.</p>
+<h2>Integration</h2>
+<ul><li><b>Calendar:</b> <code>calendar.reminders_pro</code> (add the “Reminders Pro” integration – see Settings).</li>
+<li><b>Sensors:</b> <code>sensor.reminders_pro_next</code>, <code>_today</code>, <code>_active</code>, <code>_unacknowledged</code>, <code>_last</code> and <code>binary_sensor.reminders_pro_attention</code>.</li>
+<li><b>Events:</b> <code>reminders_pro_fired</code>, <code>_done</code>, <code>_snoozed</code>, <code>_skipped</code>, <code>_unacknowledged</code>.</li>
+<li><b>Commands</b> to the add-on: event <code>reminders_pro_command</code>, e.g. <code>{"cmd":"quick","title":"Pasta ready","minutes":10}</code>, <code>{"cmd":"done","token":"…"}</code>, <code>{"cmd":"trigger","id":3}</code>, <code>{"cmd":"pause","id":3,"days":2}</code>.</li>
+<li><b>Dashboard cards:</b> Reminders Pro: next, today, upcoming, acknowledge, quick (work through Nabu Casa too).</li></ul>
+<h2>Troubleshooting</h2>
+<p>Nothing arrives? Press <b>Test</b> on the reminder and check <b>History</b>. An empty recipient list means the add-on cannot reach HA. Notifications and times follow Home Assistant’s time zone.</p>`
+},
+};
+L.de = {
+app:"Erinnerungen Pro", new:"+ Neue Erinnerung", save:"Speichern", cancel:"Abbrechen", del:"Löschen", edit:"Bearbeiten", test:"Testen", dup:"Duplizieren", close:"Schließen", add:"Hinzufügen", search:"Suchen…", all:"Alle", loading:"Lädt…", saved:"Gespeichert", deleted:"Gelöscht", confirm_del:"Erinnerung „{x}“ löschen?", tested:"Testbenachrichtigung gesendet",
+tab_rem:"Erinnerungen", tab_agenda:"Agenda", tab_hist:"Verlauf", tab_set:"Einstellungen", tab_help:"Hilfe",
+empty:"Noch keine Erinnerungen. Lege die erste mit der Schaltfläche oben an oder nutze die Schnellerinnerung.", st_active:"Aktiv", st_paused:"Pausiert", st_off:"Aus", st_ended:"Beendet", next:"Nächste", in_:"in", none_more:"Keine weiteren Termine", remaining:"{n} übrig", fired_n:"{n}× ausgelöst",
+pause:"Pausieren", resume:"Fortsetzen", skip_next:"Nächste überspringen", skipped:"Nächster Termin übersprungen ({x})", pause_1:"1 Tag", pause_3:"3 Tage", pause_7:"7 Tage", pause_30:"30 Tage", enable:"Einschalten", disable:"Ausschalten", paused_until:"Pausiert bis {x}",
+quick:"Schnellerinnerung", quick_ph:"Woran soll ich erinnern?", quick_min:"in {n} Min", unack:"Wartet auf Bestätigung", done:"Erledigt", snooze:"Schlummern", skip:"Überspringen", snooze_n:"Schlummern {n} Min", sent_n:"{n}× gesendet",
+ed_new:"Neue Erinnerung", ed_edit:"Erinnerung bearbeiten", f_title:"Titel", f_note:"Text (optional)", f_cat:"Kategorie", f_cat_none:"Keine Kategorie", f_cat_new:"Neue Kategorie…",
+s_what:"Was", s_when:"Wann", s_how:"Wie soll ich benachrichtigen?", s_opts:"Optionen",
+w_once:"Einmal", w_repeat:"Wiederkehrend", every:"Alle", u_minute:"Minute", u_hour:"Stunde", u_day:"Tag", u_week:"Woche", u_month:"Monat", u_year:"Jahr", up_minute:"Minuten", up_hour:"Stunden", up_day:"Tage", up_week:"Wochen", up_month:"Monate", up_year:"Jahre",
+starts:"Beginn", start_time:"Um", ends:"Ende", e_never:"Nie", e_date:"Letzter Tag", e_count:"Nach Anzahl", times:"Uhrzeiten", add_time:"Uhrzeit hinzufügen", series:"Wiederholte Uhrzeiten", add_series:"Serie hinzufügen", series_every:"alle", series_min:"Min zwischen", from:"von", to:"bis", window:"Nur zwischen", window_hint:"Leer = ganzer Tag", wd_filter:"Nur diese Tage (optional)", wd_req:"Wochentage", md_label:"Tag im Monat", md_last:"letzter", m_days:"Bestimmte Tage", m_nth:"Wochentag (z. B. letzter Freitag)", nth_1:"erster", nth_2:"zweiter", nth_3:"dritter", nth_4:"vierter", nth_5:"fünfter", nth_m1:"letzter", wd_any:"Tag", wd_work:"Werktag (Mo–Fr)", wd_weekend:"Wochenendtag", months_label:"Monate", exceptions:"Ausnahmetage", add_exc:"Ausnahme hinzufügen", overflow:"Wenn der Tag im Monat fehlt", of_clamp:"letzten Tag nehmen", of_skip:"Monat überspringen",
+preview:"Nächste Termine", preview_none:"Keine Termine mit diesen Einstellungen", left_after:"{n} noch ab jetzt",
+how_hint:"Füge einen oder mehrere Wege hinzu. Alle laufen beim Auslösen.", add_act:"+ Weg hinzufügen", a_push:"Mobile Push (mit Tasten)", a_notify:"Beliebiger notify-Dienst (Telegram, E-Mail …)", a_persistent:"Dauerhafte Benachrichtigung in HA", a_tts:"Sprache (TTS)", a_sound:"Ton", a_service:"Dienst aufrufen", a_set_entity:"Entität setzen", a_event:"Ereignis senden",
+targets:"Empfänger", targets_none:"Keine gefunden – ist HA verbunden?", msg:"Nachricht (leer = Erinnerungstext)", title_ov:"Titel (leer = Erinnerungstitel)", tts_text:"Gesprochener Text", engine:"TTS-Engine", engine_def:"Standard", lang:"Sprache (optional)", volume:"Lautstärke %", source:"Quelle", src_file:"Datei in /media", src_url:"Web-Adresse", value:"Wert", service:"Dienst (domain.dienst)", data:"Daten (JSON)", entity:"Entität", ev_name:"Ereignisname", act_repeat:"Wiederholen bei „bis Bestätigung wiederholen“", act_enabled:"An", var_insert:"Variablen", var_entity:"Entitätswert…",
+o_repeat:"Wiederholen bis bestätigt", o_every:"alle", o_max:"höchstens", o_times:"Mal", o_buttons:"Tasten in der Mobil-Benachrichtigung (Erledigt · Schlummern · Überspringen)", o_snooze:"Schlummern (Minuten)", o_quiet:"Auch in Ruhezeiten senden", o_home:"Nur wenn jemand zu Hause ist", o_urgent:"Dringend (Alarmkanal / kritische Meldung)", o_dur:"Dauer im Kalender (Min)", o_autodel:"Nach dem Auslösen löschen (einmalig)", o_grace:"Verspätet senden innerhalb (Min)", o_url:"Beim Tippen öffnen (z. B. /lovelace/0)",
+set_quiet:"Ruhezeiten", quiet_on:"Ruhezeiten verwenden", quiet_from:"Von", quiet_to:"Bis", quiet_mode:"Während der Ruhezeiten", q_delay:"verschieben bis zum Ende", q_skip:"überspringen", set_home:"Wer zählt als „zu Hause“?", set_home_hint:"Personen wählen. Leer = immer zu Hause.", set_targets:"Standardempfänger für Schnellerinnerungen", set_tts:"Standardstimme", set_grace:"Verpasste Erinnerung höchstens so spät senden (Min)", set_snooze:"Standard-Schlummern (Min)", set_choices:"Schlummer-Auswahl auf Karten", set_hist:"Verlauf behalten (Tage)", set_cat:"Kategorien", cat_name:"Name", cat_color:"Farbe",
+set_int:"Kalender und Dashboard-Karten", int_cal:"Kalender-Entität", int_card:"Dashboard-Karten", int_ok:"Installiert", int_old:"Alte Version – aktualisieren", int_missing:"Nicht installiert", int_restart:"Home Assistant neu starten, dann Einstellungen → Geräte & Dienste → Integration hinzufügen → „Reminders Pro“.", int_install:"Jetzt installieren / aktualisieren", int_unmounted:"Das Add-on hat keinen Zugriff auf den HA-Konfigurationsordner. Lade die Dateien unten herunter und folge Abschnitt 5 der Dokumentation: zip im Konfigurationsordner entpacken, Kartendatei nach /config/www legen, HA neu starten.", int_dl_int:"Integration herunterladen (zip)", int_dl_card:"Kartendatei herunterladen", int_url:"Add-on-Adresse für die Integration", int_resource:"Karten-Ressource automatisch hinzugefügt", int_resource_no:"Füge /local/reminders-pro-cards.js als JavaScript-Modul unter Dashboards → Ressourcen hinzu",
+set_data:"Daten", export:"Exportieren", import:"Importieren", imp_merge:"Hinzufügen", imp_replace:"Alles ersetzen", imp_done:"{n} Erinnerungen importiert", clear_hist:"Verlauf löschen", set_saved:"Einstellungen gespeichert",
+h_fired:"Ausgelöst", h_repeat:"Wiederholt", h_done:"Erledigt", h_skipped:"Übersprungen", h_snoozed:"Geschlummert", h_missed:"Verpasst", h_merged:"Zusammengelegt", h_quiet_skip:"Ruhezeit – übersprungen", h_quiet_delay:"Ruhezeit – verschoben", h_home_skip:"Niemand zu Hause – übersprungen", h_unacked:"Keine Bestätigung", h_error:"Fehler", h_skip_next:"Nächster Termin gestrichen", h_empty:"Noch kein Verlauf",
+err_title:"Titel eingeben", err_freq:"Ungültige Häufigkeit", err_interval:"Ungültiges Intervall", err_start:"Startdatum eingeben", err_date:"Ungültiges Datum", err_time:"Ungültige Uhrzeit", err_end_before_start:"Das Ende liegt vor dem Start", err_count:"Ungültige Anzahl", err_series:"Ungültige Serie (von ≤ bis, mind. 1 Min)", err_no_times:"Mindestens eine Uhrzeit hinzufügen", err_weekday:"Ungültiger Wochentag", err_monthday:"Ungültiger Tag im Monat", err_nth:"Ungültige Auswahl", err_month:"Ungültiger Monat", err_rule:"Ungültige Regel", err_action_type:"Unbekannte Aktion", err_service:"Dienst als domain.dienst schreiben", err_entity:"Entität als domain.name schreiben", err_event:"Ungültiger Ereignisname", err_json:"Die Daten sind kein gültiges JSON", err_name:"Namen eingeben", err_color:"Ungültige Farbe", err_not_found:"Nicht gefunden", err_import_format:"Die Datei ist kein Reminders-Pro-Export", err_bad_request:"Ungültige Anfrage", err_internal:"Interner Fehler", forbidden:"Zugriff verweigert",
+d_once:"Einmal", d_each1_minute:"Jede Minute", d_each1_hour:"Stündlich", d_each1_day:"Täglich", d_each1_week:"Wöchentlich", d_each1_month:"Monatlich", d_each1_year:"Jährlich", d_eachn:"Alle {n} {up}", d_at:"um", d_every_min:"alle {n} Min", d_between:"{a}–{b}", d_onday:"am", d_last:"letzter", d_from:"ab", d_until:"bis", d_count:"{n}-mal", d_exc:"{n} Ausnahmen", d_clock:"{x}",
+help_note:"Die ausführliche Hilfe ist auf Englisch. Beispiele: alle 3 Tage um 08:00 · alle 2 Wochen Mo+Do · letzter Freitag im Monat · jedes Jahr am 3. März.",
+};
+L.fr = {
+app:"Rappels Pro", new:"+ Nouveau rappel", save:"Enregistrer", cancel:"Annuler", del:"Supprimer", edit:"Modifier", test:"Tester", dup:"Dupliquer", close:"Fermer", add:"Ajouter", search:"Rechercher…", all:"Tous", loading:"Chargement…", saved:"Enregistré", deleted:"Supprimé", confirm_del:"Supprimer le rappel « {x} » ?", tested:"Notification de test envoyée",
+tab_rem:"Rappels", tab_agenda:"Agenda", tab_hist:"Historique", tab_set:"Réglages", tab_help:"Aide",
+empty:"Aucun rappel. Créez le premier avec le bouton ci-dessus ou utilisez le rappel rapide.", st_active:"Actif", st_paused:"En pause", st_off:"Désactivé", st_ended:"Terminé", next:"Prochain", in_:"dans", none_more:"Plus aucune occurrence", remaining:"{n} restant(s)", fired_n:"Déclenché {n} fois",
+pause:"Mettre en pause", resume:"Reprendre", skip_next:"Ignorer le prochain", skipped:"Prochaine occurrence ignorée ({x})", pause_1:"1 jour", pause_3:"3 jours", pause_7:"7 jours", pause_30:"30 jours", enable:"Activer", disable:"Désactiver", paused_until:"En pause jusqu’au {x}",
+quick:"Rappel rapide", quick_ph:"De quoi dois-je vous rappeler ?", quick_min:"dans {n} min", unack:"En attente d’acquittement", done:"Fait", snooze:"Reporter", skip:"Ignorer", snooze_n:"Reporter {n} min", sent_n:"envoyé {n} fois",
+ed_new:"Nouveau rappel", ed_edit:"Modifier le rappel", f_title:"Titre", f_note:"Texte (facultatif)", f_cat:"Catégorie", f_cat_none:"Aucune catégorie", f_cat_new:"Nouvelle catégorie…",
+s_what:"Quoi", s_when:"Quand", s_how:"Comment être prévenu ?", s_opts:"Options",
+w_once:"Une fois", w_repeat:"Récurrent", every:"Tous les", u_minute:"minute", u_hour:"heure", u_day:"jour", u_week:"semaine", u_month:"mois", u_year:"an", up_minute:"minutes", up_hour:"heures", up_day:"jours", up_week:"semaines", up_month:"mois", up_year:"ans",
+starts:"Début", start_time:"À", ends:"Fin", e_never:"Jamais", e_date:"Dernier jour", e_count:"Après un nombre de fois", times:"Heures", add_time:"Ajouter une heure", series:"Heures répétées", add_series:"Ajouter une série", series_every:"toutes les", series_min:"min entre", from:"de", to:"à", window:"Seulement entre", window_hint:"Vide = toute la journée", wd_filter:"Seulement ces jours (facultatif)", wd_req:"Jours de la semaine", md_label:"Jour du mois", md_last:"dernier", m_days:"Dates précises", m_nth:"Jour de la semaine (ex. dernier vendredi)", nth_1:"premier", nth_2:"deuxième", nth_3:"troisième", nth_4:"quatrième", nth_5:"cinquième", nth_m1:"dernier", wd_any:"jour", wd_work:"jour ouvré (lun–ven)", wd_weekend:"jour de week-end", months_label:"Mois", exceptions:"Dates d’exception", add_exc:"Ajouter une exception", overflow:"Si le jour n’existe pas dans le mois", of_clamp:"utiliser le dernier jour", of_skip:"ignorer ce mois",
+preview:"Prochaines occurrences", preview_none:"Aucune occurrence avec ces réglages", left_after:"{n} restant(s) à partir de maintenant",
+how_hint:"Ajoutez une ou plusieurs façons. Toutes s’exécutent au déclenchement.", add_act:"+ Ajouter une façon", a_push:"Push mobile (avec boutons)", a_notify:"Service notify au choix (Telegram, e-mail …)", a_persistent:"Notification persistante dans HA", a_tts:"Voix (TTS)", a_sound:"Son", a_service:"Appeler un service", a_set_entity:"Définir une entité", a_event:"Émettre un événement",
+targets:"Destinataires", targets_none:"Aucun trouvé – HA est-il connecté ?", msg:"Message (vide = texte du rappel)", title_ov:"Titre (vide = titre du rappel)", tts_text:"Texte à lire", engine:"Moteur TTS", engine_def:"Par défaut", lang:"Langue (facultatif)", volume:"Volume %", source:"Source", src_file:"Fichier dans /media", src_url:"Adresse web", value:"Valeur", service:"Service (domaine.service)", data:"Données (JSON)", entity:"Entité", ev_name:"Nom de l’événement", act_repeat:"Répéter si « répéter jusqu’à acquittement » est activé", act_enabled:"Actif", var_insert:"Variables", var_entity:"Valeur d’entité…",
+o_repeat:"Répéter jusqu’à acquittement", o_every:"toutes les", o_max:"au plus", o_times:"fois", o_buttons:"Boutons dans la notification mobile (Fait · Reporter · Ignorer)", o_snooze:"Report (minutes)", o_quiet:"Envoyer aussi pendant les heures calmes", o_home:"Seulement si quelqu’un est à la maison", o_urgent:"Urgent (canal d’alarme / alerte critique)", o_dur:"Durée dans l’agenda (min)", o_autodel:"Supprimer après déclenchement (unique)", o_grace:"Envoyer en retard dans la limite de (min)", o_url:"Ouvrir au toucher (ex. /lovelace/0)",
+set_quiet:"Heures calmes", quiet_on:"Utiliser les heures calmes", quiet_from:"De", quiet_to:"À", quiet_mode:"Pendant les heures calmes", q_delay:"reporter jusqu’à leur fin", q_skip:"ignorer", set_home:"Qui compte comme « à la maison » ?", set_home_hint:"Choisissez des personnes. Vide = toujours à la maison.", set_targets:"Destinataires par défaut des rappels rapides", set_tts:"Voix par défaut", set_grace:"Envoyer un rappel manqué avec au plus (min) de retard", set_snooze:"Report par défaut (min)", set_choices:"Choix de report sur les cartes", set_hist:"Conserver l’historique (jours)", set_cat:"Catégories", cat_name:"Nom", cat_color:"Couleur",
+set_int:"Calendrier et cartes de tableau de bord", int_cal:"Entité calendrier", int_card:"Cartes de tableau de bord", int_ok:"Installé", int_old:"Ancienne version – mettre à jour", int_missing:"Non installé", int_restart:"Redémarrez Home Assistant, puis Paramètres → Appareils et services → Ajouter une intégration → « Reminders Pro ».", int_install:"Installer / mettre à jour maintenant", int_unmounted:"Le module n'a pas accès au dossier de configuration de HA. Téléchargez les fichiers ci-dessous et suivez la section 5 de la documentation : décompressez le zip dans le dossier de configuration, placez le fichier des cartes dans /config/www, redémarrez HA.", int_dl_int:"Télécharger l'intégration (zip)", int_dl_card:"Télécharger le fichier des cartes", int_url:"Adresse du module utilisée par l’intégration", int_resource:"Ressource de la carte ajoutée automatiquement", int_resource_no:"Ajoutez /local/reminders-pro-cards.js comme module JavaScript dans Tableaux de bord → Ressources",
+set_data:"Données", export:"Exporter", import:"Importer", imp_merge:"Ajouter", imp_replace:"Tout remplacer", imp_done:"{n} rappels importés", clear_hist:"Effacer l’historique", set_saved:"Réglages enregistrés",
+h_fired:"Déclenché", h_repeat:"Répété", h_done:"Fait", h_skipped:"Ignoré", h_snoozed:"Reporté", h_missed:"Manqué", h_merged:"Fusionné", h_quiet_skip:"Heures calmes – ignoré", h_quiet_delay:"Heures calmes – reporté", h_home_skip:"Personne à la maison – ignoré", h_unacked:"Pas d’acquittement", h_error:"Erreur", h_skip_next:"Prochaine occurrence retirée", h_empty:"Pas encore d’historique",
+err_title:"Saisissez un titre", err_freq:"Fréquence invalide", err_interval:"Intervalle invalide", err_start:"Saisissez une date de début", err_date:"Date invalide", err_time:"Heure invalide", err_end_before_start:"La fin précède le début", err_count:"Nombre invalide", err_series:"Série invalide (de ≤ à, au moins 1 min)", err_no_times:"Ajoutez au moins une heure", err_weekday:"Jour de la semaine invalide", err_monthday:"Jour du mois invalide", err_nth:"Choix invalide", err_month:"Mois invalide", err_rule:"Règle invalide", err_action_type:"Action inconnue", err_service:"Écrivez le service sous la forme domaine.service", err_entity:"Écrivez l’entité sous la forme domaine.nom", err_event:"Nom d’événement invalide", err_json:"Les données ne sont pas du JSON valide", err_name:"Saisissez un nom", err_color:"Couleur invalide", err_not_found:"Introuvable", err_import_format:"Le fichier n’est pas un export de Reminders Pro", err_bad_request:"Requête invalide", err_internal:"Erreur interne", forbidden:"Accès refusé",
+d_once:"Une fois", d_each1_minute:"Chaque minute", d_each1_hour:"Chaque heure", d_each1_day:"Chaque jour", d_each1_week:"Chaque semaine", d_each1_month:"Chaque mois", d_each1_year:"Chaque année", d_eachn:"Tous les {n} {up}", d_at:"à", d_every_min:"toutes les {n} min", d_between:"{a}–{b}", d_onday:"le", d_last:"dernier", d_from:"à partir du", d_until:"jusqu’au", d_count:"{n} fois", d_exc:"{n} exceptions", d_clock:"{x}",
+help_note:"L’aide détaillée est en anglais. Exemples : tous les 3 jours à 08:00 · toutes les 2 semaines lun+jeu · dernier vendredi du mois · chaque année le 3 mars.",
+};
+L.nb = {
+app:"Påminnelser Pro", new:"+ Ny påminnelse", save:"Lagre", cancel:"Avbryt", del:"Slett", edit:"Endre", test:"Test", dup:"Dupliser", close:"Lukk", add:"Legg til", search:"Søk…", all:"Alle", loading:"Laster…", saved:"Lagret", deleted:"Slettet", confirm_del:"Slette påminnelsen «{x}»?", tested:"Testvarsel sendt",
+tab_rem:"Påminnelser", tab_agenda:"Agenda", tab_hist:"Historikk", tab_set:"Innstillinger", tab_help:"Hjelp",
+empty:"Ingen påminnelser ennå. Lag den første med knappen over eller bruk hurtigpåminnelsen.", st_active:"Aktiv", st_paused:"Pauset", st_off:"Av", st_ended:"Ferdig", next:"Neste", in_:"om", none_more:"Ingen flere tilfeller", remaining:"{n} igjen", fired_n:"Utløst {n} ganger",
+pause:"Pause", resume:"Gjenoppta", skip_next:"Hopp over neste", skipped:"Neste tilfelle hoppes over ({x})", pause_1:"1 dag", pause_3:"3 dager", pause_7:"7 dager", pause_30:"30 dager", enable:"Slå på", disable:"Slå av", paused_until:"Pauset til {x}",
+quick:"Hurtigpåminnelse", quick_ph:"Hva skal jeg minne deg på?", quick_min:"om {n} min", unack:"Venter på kvittering", done:"Ferdig", snooze:"Utsett", skip:"Hopp over", snooze_n:"Utsett {n} min", sent_n:"sendt {n} ganger",
+ed_new:"Ny påminnelse", ed_edit:"Endre påminnelse", f_title:"Tittel", f_note:"Tekst (valgfri)", f_cat:"Kategori", f_cat_none:"Ingen kategori", f_cat_new:"Ny kategori…",
+s_what:"Hva", s_when:"Når", s_how:"Hvordan skal jeg varsle?", s_opts:"Alternativer",
+w_once:"En gang", w_repeat:"Gjentakende", every:"Hver", u_minute:"minutt", u_hour:"time", u_day:"dag", u_week:"uke", u_month:"måned", u_year:"år", up_minute:"minutter", up_hour:"timer", up_day:"dager", up_week:"uker", up_month:"måneder", up_year:"år",
+starts:"Starter", start_time:"Klokken", ends:"Slutter", e_never:"Aldri", e_date:"Siste dag", e_count:"Etter antall ganger", times:"Klokkeslett", add_time:"Legg til klokkeslett", series:"Gjentatte klokkeslett", add_series:"Legg til serie", series_every:"hvert", series_min:"min mellom", from:"fra", to:"til", window:"Bare mellom", window_hint:"Tomt = hele døgnet", wd_filter:"Bare disse dagene (valgfritt)", wd_req:"Ukedager", md_label:"Dag i måneden", md_last:"siste", m_days:"Bestemte datoer", m_nth:"Ukedag (f.eks. siste fredag)", nth_1:"første", nth_2:"andre", nth_3:"tredje", nth_4:"fjerde", nth_5:"femte", nth_m1:"siste", wd_any:"dag", wd_work:"hverdag (man–fre)", wd_weekend:"helgedag", months_label:"Måneder", exceptions:"Unntaksdatoer", add_exc:"Legg til unntak", overflow:"Hvis dagen mangler i måneden", of_clamp:"bruk siste dag", of_skip:"hopp over måneden",
+preview:"Neste tilfeller", preview_none:"Ingen tilfeller med disse innstillingene", left_after:"{n} igjen fra nå",
+how_hint:"Legg til én eller flere måter. Alle kjøres når påminnelsen utløses.", add_act:"+ Legg til måte", a_push:"Mobilvarsel (med knapper)", a_notify:"Valgfri notify-tjeneste (Telegram, e-post …)", a_persistent:"Vedvarende varsel i HA", a_tts:"Stemme (TTS)", a_sound:"Lyd", a_service:"Kall en tjeneste", a_set_entity:"Sett entitet", a_event:"Send hendelse",
+targets:"Mottakere", targets_none:"Ingen funnet – er HA tilkoblet?", msg:"Melding (tomt = påminnelsens tekst)", title_ov:"Tittel (tomt = påminnelsens)", tts_text:"Tekst som leses opp", engine:"TTS-motor", engine_def:"Standard", lang:"Språk (valgfritt)", volume:"Volum %", source:"Kilde", src_file:"Fil i /media", src_url:"Nettadresse", value:"Verdi", service:"Tjeneste (domene.tjeneste)", data:"Data (JSON)", entity:"Entitet", ev_name:"Hendelsesnavn", act_repeat:"Gjenta ved «gjenta til kvittert»", act_enabled:"På", var_insert:"Variabler", var_entity:"Entitetsverdi…",
+o_repeat:"Gjenta til kvittert", o_every:"hvert", o_max:"høyst", o_times:"ganger", o_buttons:"Knapper i mobilvarselet (Ferdig · Utsett · Hopp over)", o_snooze:"Utsett (minutter)", o_quiet:"Send også i stille timer", o_home:"Bare hvis noen er hjemme", o_urgent:"Haster (alarmkanal / kritisk varsel)", o_dur:"Lengde i kalenderen (min)", o_autodel:"Slett etter utløsning (engangs)", o_grace:"Send forsinket innen (min)", o_url:"Åpne ved trykk (f.eks. /lovelace/0)",
+set_quiet:"Stille timer", quiet_on:"Bruk stille timer", quiet_from:"Fra", quiet_to:"Til", quiet_mode:"I stille timer", q_delay:"utsett til de er over", q_skip:"hopp over", set_home:"Hvem regnes som «hjemme»?", set_home_hint:"Velg personer. Tomt = alltid hjemme.", set_targets:"Standardmottakere for hurtigpåminnelser", set_tts:"Standardstemme", set_grace:"Send en glemt påminnelse forsinket med høyst (min)", set_snooze:"Standard utsettelse (min)", set_choices:"Utsettelsesvalg på kort", set_hist:"Behold historikk (dager)", set_cat:"Kategorier", cat_name:"Navn", cat_color:"Farge",
+set_int:"Kalender og dashbordkort", int_cal:"Kalenderentitet", int_card:"Dashbordkort", int_ok:"Installert", int_old:"Gammel versjon – oppdater", int_missing:"Ikke installert", int_restart:"Start Home Assistant på nytt, gå så til Innstillinger → Enheter og tjenester → Legg til integrasjon → «Reminders Pro».", int_install:"Installer / oppdater nå", int_unmounted:"Tillegget har ikke tilgang til HAs konfigurasjonsmappe. Last ned filene nedenfor og følg avsnitt 5 i dokumentasjonen: pakk ut zip-filen i konfigurasjonsmappen, legg kortfilen i /config/www, start HA på nytt.", int_dl_int:"Last ned integrasjonen (zip)", int_dl_card:"Last ned kortfilen", int_url:"Tilleggets adresse for integrasjonen", int_resource:"Kortressursen ble lagt til automatisk", int_resource_no:"Legg til /local/reminders-pro-cards.js som JavaScript-modul under Dashbord → Ressurser",
+set_data:"Data", export:"Eksporter", import:"Importer", imp_merge:"Legg til", imp_replace:"Erstatt alt", imp_done:"{n} påminnelser importert", clear_hist:"Tøm historikk", set_saved:"Innstillinger lagret",
+h_fired:"Utløst", h_repeat:"Gjentatt", h_done:"Ferdig", h_skipped:"Hoppet over", h_snoozed:"Utsatt", h_missed:"Glemt", h_merged:"Slått sammen", h_quiet_skip:"Stille timer – hoppet over", h_quiet_delay:"Stille timer – utsatt", h_home_skip:"Ingen hjemme – hoppet over", h_unacked:"Ingen kvittering", h_error:"Feil", h_skip_next:"Neste tilfelle strøket", h_empty:"Ingen historikk ennå",
+err_title:"Skriv en tittel", err_freq:"Ugyldig frekvens", err_interval:"Ugyldig intervall", err_start:"Oppgi startdato", err_date:"Ugyldig dato", err_time:"Ugyldig klokkeslett", err_end_before_start:"Slutten ligger før starten", err_count:"Ugyldig antall", err_series:"Ugyldig serie (fra ≤ til, minst 1 min)", err_no_times:"Legg til minst ett klokkeslett", err_weekday:"Ugyldig ukedag", err_monthday:"Ugyldig dag i måneden", err_nth:"Ugyldig valg", err_month:"Ugyldig måned", err_rule:"Ugyldig regel", err_action_type:"Ukjent handling", err_service:"Tjenesten må skrives som domene.tjeneste", err_entity:"Entiteten må skrives som domene.navn", err_event:"Ugyldig hendelsesnavn", err_json:"Dataene er ikke gyldig JSON", err_name:"Skriv et navn", err_color:"Ugyldig farge", err_not_found:"Ikke funnet", err_import_format:"Filen er ikke en eksport fra Påminnelser Pro", err_bad_request:"Ugyldig forespørsel", err_internal:"Intern feil", forbidden:"Ingen tilgang",
+d_once:"En gang", d_each1_minute:"Hvert minutt", d_each1_hour:"Hver time", d_each1_day:"Hver dag", d_each1_week:"Hver uke", d_each1_month:"Hver måned", d_each1_year:"Hvert år", d_eachn:"Hver {n}. {u}", d_at:"kl.", d_every_min:"hvert {n}. min", d_between:"{a}–{b}", d_onday:"den", d_last:"siste", d_from:"fra", d_until:"til", d_count:"{n} ganger", d_exc:"{n} unntak", d_clock:"{x}",
+help_note:"Den utførlige hjelpen er på engelsk. Eksempler: hver 3. dag kl. 08:00 · hver 2. uke man+tors · siste fredag i måneden · hvert år 3. mars.",
+};
+L.fi = {
+app:"Muistutukset Pro", new:"+ Uusi muistutus", save:"Tallenna", cancel:"Peruuta", del:"Poista", edit:"Muokkaa", test:"Testaa", dup:"Kopioi", close:"Sulje", add:"Lisää", search:"Hae…", all:"Kaikki", loading:"Ladataan…", saved:"Tallennettu", deleted:"Poistettu", confirm_del:"Poistetaanko muistutus ”{x}”?", tested:"Testi-ilmoitus lähetetty",
+tab_rem:"Muistutukset", tab_agenda:"Agenda", tab_hist:"Historia", tab_set:"Asetukset", tab_help:"Ohje",
+empty:"Ei vielä muistutuksia. Luo ensimmäinen yllä olevalla painikkeella tai käytä pikamuistutusta.", st_active:"Aktiivinen", st_paused:"Tauolla", st_off:"Pois", st_ended:"Päättynyt", next:"Seuraava", in_:"", none_more:"Ei enää toistoja", remaining:"{n} jäljellä", fired_n:"Laukaistu {n} kertaa",
+pause:"Tauko", resume:"Jatka", skip_next:"Ohita seuraava", skipped:"Seuraava toisto ohitetaan ({x})", pause_1:"1 päivä", pause_3:"3 päivää", pause_7:"7 päivää", pause_30:"30 päivää", enable:"Kytke päälle", disable:"Kytke pois", paused_until:"Tauolla {x} asti",
+quick:"Pikamuistutus", quick_ph:"Mistä muistutan?", quick_min:"{n} min kuluttua", unack:"Odottaa kuittausta", done:"Valmis", snooze:"Torkuta", skip:"Ohita", snooze_n:"Torkuta {n} min", sent_n:"lähetetty {n} kertaa",
+ed_new:"Uusi muistutus", ed_edit:"Muokkaa muistutusta", f_title:"Otsikko", f_note:"Teksti (valinnainen)", f_cat:"Luokka", f_cat_none:"Ei luokkaa", f_cat_new:"Uusi luokka…",
+s_what:"Mitä", s_when:"Milloin", s_how:"Miten ilmoitetaan?", s_opts:"Valinnat",
+w_once:"Kerran", w_repeat:"Toistuva", every:"Joka", u_minute:"minuutti", u_hour:"tunti", u_day:"päivä", u_week:"viikko", u_month:"kuukausi", u_year:"vuosi", up_minute:"minuuttia", up_hour:"tuntia", up_day:"päivää", up_week:"viikkoa", up_month:"kuukautta", up_year:"vuotta",
+starts:"Alkaa", start_time:"Kello", ends:"Päättyy", e_never:"Ei koskaan", e_date:"Viimeinen päivä", e_count:"Tietyn määrän jälkeen", times:"Kellonajat", add_time:"Lisää kellonaika", series:"Toistuvat kellonajat", add_series:"Lisää sarja", series_every:"joka", series_min:"min välein", from:"alkaen", to:"asti", window:"Vain välillä", window_hint:"Tyhjä = koko vuorokausi", wd_filter:"Vain nämä päivät (valinnainen)", wd_req:"Viikonpäivät", md_label:"Kuukauden päivä", md_last:"viimeinen", m_days:"Tietyt päivämäärät", m_nth:"Viikonpäivä (esim. viimeinen perjantai)", nth_1:"ensimmäinen", nth_2:"toinen", nth_3:"kolmas", nth_4:"neljäs", nth_5:"viides", nth_m1:"viimeinen", wd_any:"päivä", wd_work:"arkipäivä (ma–pe)", wd_weekend:"viikonloppupäivä", months_label:"Kuukaudet", exceptions:"Poikkeuspäivät", add_exc:"Lisää poikkeus", overflow:"Jos päivää ei ole kuussa", of_clamp:"käytä viimeistä päivää", of_skip:"ohita kuukausi",
+preview:"Seuraavat toistot", preview_none:"Ei toistoja näillä asetuksilla", left_after:"{n} jäljellä nyt alkaen",
+how_hint:"Lisää yksi tai useampi tapa. Kaikki suoritetaan, kun muistutus laukeaa.", add_act:"+ Lisää tapa", a_push:"Mobiili-push (painikkeilla)", a_notify:"Mikä tahansa notify-palvelu (Telegram, sähköposti …)", a_persistent:"Pysyvä ilmoitus HA:ssa", a_tts:"Ääni (TTS)", a_sound:"Äänitiedosto", a_service:"Kutsu palvelua", a_set_entity:"Aseta entiteetti", a_event:"Lähetä tapahtuma",
+targets:"Vastaanottajat", targets_none:"Ei löytynyt – onko HA yhdistetty?", msg:"Viesti (tyhjä = muistutuksen teksti)", title_ov:"Otsikko (tyhjä = muistutuksen)", tts_text:"Puhuttava teksti", engine:"TTS-moottori", engine_def:"Oletus", lang:"Kieli (valinnainen)", volume:"Äänenvoimakkuus %", source:"Lähde", src_file:"Tiedosto kansiossa /media", src_url:"Verkko-osoite", value:"Arvo", service:"Palvelu (domain.palvelu)", data:"Data (JSON)", entity:"Entiteetti", ev_name:"Tapahtuman nimi", act_repeat:"Toista, kun ”toista kuittaukseen asti” on päällä", act_enabled:"Päällä", var_insert:"Muuttujat", var_entity:"Entiteetin arvo…",
+o_repeat:"Toista kuittaukseen asti", o_every:"joka", o_max:"enintään", o_times:"kertaa", o_buttons:"Painikkeet mobiili-ilmoituksessa (Valmis · Torkuta · Ohita)", o_snooze:"Torkutus (minuuttia)", o_quiet:"Lähetä myös hiljaisina tunteina", o_home:"Vain jos joku on kotona", o_urgent:"Kiireellinen (hälytyskanava / kriittinen ilmoitus)", o_dur:"Kesto kalenterissa (min)", o_autodel:"Poista laukeamisen jälkeen (kertaluonteinen)", o_grace:"Lähetä myöhässä enintään (min)", o_url:"Avaa napautuksesta (esim. /lovelace/0)",
+set_quiet:"Hiljaiset tunnit", quiet_on:"Käytä hiljaisia tunteja", quiet_from:"Alkaen", quiet_to:"Asti", quiet_mode:"Hiljaisina tunteina", q_delay:"lykkää niiden loppuun", q_skip:"ohita", set_home:"Ketkä lasketaan ”kotona oleviksi”?", set_home_hint:"Valitse henkilöt. Tyhjä = aina kotona.", set_targets:"Pikamuistutusten oletusvastaanottajat", set_tts:"Oletusääni", set_grace:"Lähetä myöhästynyt muistutus enintään (min) myöhässä", set_snooze:"Oletustorkutus (min)", set_choices:"Torkutusvalinnat korteissa", set_hist:"Säilytä historiaa (päivää)", set_cat:"Luokat", cat_name:"Nimi", cat_color:"Väri",
+set_int:"Kalenteri ja kojelautakortit", int_cal:"Kalenteriyksikkö", int_card:"Kojelautakortit", int_ok:"Asennettu", int_old:"Vanha versio – päivitä", int_missing:"Ei asennettu", int_restart:"Käynnistä Home Assistant uudelleen ja valitse Asetukset → Laitteet ja palvelut → Lisää integraatio → ”Reminders Pro”.", int_install:"Asenna / päivitä nyt", int_unmounted:"Lisäosalla ei ole pääsyä HA:n asetuskansioon. Lataa alla olevat tiedostot ja seuraa dokumentaation kohtaa 5: pura zip asetuskansioon, siirrä korttitiedosto kansioon /config/www ja käynnistä HA uudelleen.", int_dl_int:"Lataa integraatio (zip)", int_dl_card:"Lataa korttitiedosto", int_url:"Lisäosan osoite integraatiolle", int_resource:"Kortin resurssi lisättiin automaattisesti", int_resource_no:"Lisää /local/reminders-pro-cards.js JavaScript-moduulina kohdassa Kojelaudat → Resurssit",
+set_data:"Data", export:"Vie", import:"Tuo", imp_merge:"Lisää", imp_replace:"Korvaa kaikki", imp_done:"{n} muistutusta tuotu", clear_hist:"Tyhjennä historia", set_saved:"Asetukset tallennettu",
+h_fired:"Laukaistu", h_repeat:"Toistettu", h_done:"Valmis", h_skipped:"Ohitettu", h_snoozed:"Torkutettu", h_missed:"Ohitse mennyt", h_merged:"Yhdistetty", h_quiet_skip:"Hiljaiset tunnit – ohitettu", h_quiet_delay:"Hiljaiset tunnit – lykätty", h_home_skip:"Ei ketään kotona – ohitettu", h_unacked:"Ei kuittausta", h_error:"Virhe", h_skip_next:"Seuraava toisto poistettu", h_empty:"Ei vielä historiaa",
+err_title:"Anna otsikko", err_freq:"Virheellinen toistotiheys", err_interval:"Virheellinen väli", err_start:"Anna alkupäivä", err_date:"Virheellinen päivämäärä", err_time:"Virheellinen kellonaika", err_end_before_start:"Loppu on ennen alkua", err_count:"Virheellinen määrä", err_series:"Virheellinen sarja (alku ≤ loppu, vähintään 1 min)", err_no_times:"Lisää vähintään yksi kellonaika", err_weekday:"Virheellinen viikonpäivä", err_monthday:"Virheellinen kuukauden päivä", err_nth:"Virheellinen valinta", err_month:"Virheellinen kuukausi", err_rule:"Virheellinen sääntö", err_action_type:"Tuntematon toiminto", err_service:"Kirjoita palvelu muodossa domain.palvelu", err_entity:"Kirjoita entiteetti muodossa domain.nimi", err_event:"Virheellinen tapahtuman nimi", err_json:"Data ei ole kelvollista JSONia", err_name:"Anna nimi", err_color:"Virheellinen väri", err_not_found:"Ei löytynyt", err_import_format:"Tiedosto ei ole Reminders Pro -vienti", err_bad_request:"Virheellinen pyyntö", err_internal:"Sisäinen virhe", forbidden:"Pääsy estetty",
+d_once:"Kerran", d_each1_minute:"Joka minuutti", d_each1_hour:"Joka tunti", d_each1_day:"Joka päivä", d_each1_week:"Joka viikko", d_each1_month:"Joka kuukausi", d_each1_year:"Joka vuosi", d_eachn:"Joka {n}. {u}", d_at:"klo", d_every_min:"joka {n}. min", d_between:"{a}–{b}", d_onday:"päivänä", d_last:"viimeinen", d_from:"alkaen", d_until:"asti", d_count:"{n} kertaa", d_exc:"{n} poikkeusta", d_clock:"{x}",
+help_note:"Yksityiskohtainen ohje on englanniksi. Esimerkkejä: joka 3. päivä klo 08:00 · joka 2. viikko ma+to · kuun viimeinen perjantai · joka vuosi 3. maaliskuuta.",
+};
+/* ---------- grund ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const LOCALE = {sv:"sv-SE", en:"en-GB", de:"de-DE", fr:"fr-FR", nb:"nb-NO", fi:"fi-FI"};
+let lang = "sv";
+const S = {rems:[], cats:[], targets:null, settings:{}, pending:[], status:{tz:"UTC", now:0}, tab:"rem", fcat:"", fst:"active", q:"", integ:null};
+function t(k, v) {
+  let s = (L[lang] && L[lang][k] != null) ? L[lang][k] : (L.en[k] != null ? L.en[k] : k);
+  if (v) for (const x in v) s = s.split("{" + x + "}").join(v[x]);
+  return s;
+}
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in (attrs || {})) {
+    const v = attrs[k];
+    if (v === undefined || v === null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k === "html") e.innerHTML = v;
+    else if (k === "value") e.value = v;
+    else if (k === "checked") e.checked = !!v;
+    else if (k === "style") e.style.cssText = v;
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+async function api(method, path, body) {
+  const r = await fetch(path, {method, headers: body !== undefined ? {"Content-Type": "application/json"} : {}, body: body !== undefined ? JSON.stringify(body) : undefined});
+  let j = null; try { j = await r.json(); } catch (e) {}
+  if (!r.ok) { const err = new Error((j && j.error) || r.status); err.code = j && j.error; err.detail = j && j.detail; throw err; }
+  return j;
+}
+function toast(msg, bad) {
+  const d = el("div", {class: "toast" + (bad ? " bad" : "")}, msg);
+  $("#toast").replaceChildren(d); setTimeout(() => d.remove(), bad ? 6000 : 2500);
+}
+const errText = e => { const m = t(e.code || "err_internal"); return m === (e.code || "err_internal") ? (e.message || "error") : m; };
+async function guard(fn) { try { return await fn(); } catch (e) { toast(errText(e), true); console.error(e); } }
+const pad = n => String(n).padStart(2, "0");
+const wdName = (i, w = "short") => new Date(2024, 0, 1 + i).toLocaleDateString(LOCALE[lang], {weekday: w});
+const monName = (i, w = "short") => new Date(2024, i, 1).toLocaleDateString(LOCALE[lang], {month: w});
+function fmt(ts, o) { return new Intl.DateTimeFormat(LOCALE[lang], Object.assign({timeZone: S.status.tz || "UTC"}, o || {weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"})).format(new Date(ts * 1000)); }
+function ymd(ts) { return new Intl.DateTimeFormat("sv-SE", {timeZone: S.status.tz || "UTC"}).format(new Date(ts * 1000)); }
+function hm(ts) { return new Intl.DateTimeFormat("sv-SE", {timeZone: S.status.tz || "UTC", hour: "2-digit", minute: "2-digit"}).format(new Date(ts * 1000)); }
+function rel(ts) {
+  const d = ts - (S.status.now || Date.now() / 1000), rf = new Intl.RelativeTimeFormat(LOCALE[lang], {numeric: "auto"}), a = Math.abs(d);
+  if (a < 3600) return rf.format(Math.round(d / 60), "minute");
+  if (a < 172800) return rf.format(Math.round(d / 3600), "hour");
+  return rf.format(Math.round(d / 86400), "day");
+}
+const ordSv = n => (n % 10 === 1 || n % 10 === 2) && n % 100 !== 11 && n % 100 !== 12 ? "a" : "e";
+function fixSv(s) { return lang === "sv" ? s.replace(/(\d+):e\b/g, (m, n) => n + ":" + ordSv(+n)) : s; }
+const wdKind = c => c <= 6 ? wdName(c, "long") : t(c === 7 ? "wd_any" : c === 8 ? "wd_work" : "wd_weekend");
+
+function describe(r) {
+  if (!r || !r.freq) return "";
+  const p = [];
+  if (r.freq === "once") return t("d_once") + " · " + (r.start || "").replace("T", " ");
+  const n = r.interval || 1, u = r.freq;
+  p.push(fixSv(n === 1 ? t("d_each1_" + u) : t("d_eachn", {n, u: t("u_" + u), up: t("up_" + u)})));
+  if (r.weekdays && r.weekdays.length) p.push(r.weekdays.map(i => wdName(i)).join(", "));
+  if (u === "year" && r.months && r.months.length) p.push(r.months.map(m => monName(m - 1)).join(", "));
+  if ((u === "month" || u === "year") && r.nth) p.push(r.nth.n.map(x => t(x < 0 ? "nth_m1" : "nth_" + x)).join(" + ") + " " + wdKind(r.nth.wd));
+  if ((u === "month" || u === "year") && r.monthdays && r.monthdays.length) p.push(t("d_onday") + " " + r.monthdays.map(d => d < 0 ? t("d_last") : d).join(", "));
+  if (r.times && r.times.length) p.push(t("d_at") + " " + r.times.join(", "));
+  (r.series || []).forEach(s => p.push(fixSv(t("d_every_min", {n: s.every})) + " " + s.from + "–" + s.to));
+  if (r.window) p.push(t("d_between", {a: r.window.from, b: r.window.to}));
+  if (r.start && r.start.slice(0, 10) > ymd(S.status.now || Date.now() / 1000)) p.push(t("d_from") + " " + r.start.replace("T", " "));
+  if (r.end) p.push(t("d_until") + " " + r.end.replace("T", " "));
+  if (r.count) p.push(t("d_count", {n: r.count}));
+  if (r.exdates && r.exdates.length) p.push(t("d_exc", {n: r.exdates.length}));
+  return p.join(" · ");
+}
+
+/* ---------- laddning ---------- */
+async function loadAll() {
+  const [st, rems, cats, set, pend] = await Promise.all([api("GET", "api/status"), api("GET", "api/reminders"), api("GET", "api/categories"), api("GET", "api/settings"), api("GET", "api/pending")]);
+  S.status = st; S.rems = rems; S.cats = cats; S.settings = set; S.pending = pend;
+}
+async function refresh(view = true) { await guard(async () => { await loadAll(); renderBanner(); if (view) render(); }); }
+async function ensureTargets() { if (!S.targets) { try { S.targets = await api("GET", "api/targets"); } catch (e) { S.targets = {notify: [], media_players: [], tts_entities: [], persons: [], services: []}; } } return S.targets; }
+
+/* ---------- ram ---------- */
+function renderChrome() {
+  document.documentElement.lang = lang;
+  $("#apptitle").textContent = t("app"); document.title = t("app");
+  $("#newbtn").textContent = t("new"); $("#langsel").value = lang;
+  const tabs = [["rem", "tab_rem"], ["agenda", "tab_agenda"], ["hist", "tab_hist"], ["set", "tab_set"], ["help", "tab_help"]];
+  $("#tabs").replaceChildren(...tabs.map(([k, l]) => el("button", {class: "tab" + (S.tab === k ? " on" : ""), onclick: () => { S.tab = k; renderChrome(); render(); }}, t(l))));
+}
+function renderBanner() {
+  const b = $("#banner");
+  if (!S.pending.length) { b.replaceChildren(); return; }
+  const ch = (S.settings.snooze_choices || [5, 10, 30, 60]);
+  b.replaceChildren(el("div", {class: "banner"}, el("b", {}, "🔔 " + t("unack")),
+    ...S.pending.map(p => el("div", {class: "row", style: "margin-top:8px"},
+      el("span", {class: "dot", style: "background:" + (p.color || "var(--pri)")}),
+      el("div", {class: "grow"}, el("b", {}, p.title), " ", el("span", {class: "mut small"}, fmt(p.occ_ts) + (p.sent ? " · " + t("sent_n", {n: p.sent}) : ""))),
+      el("button", {class: "btn sm pri", onclick: () => ack(p.id, "done")}, "✓ " + t("done")),
+      el("select", {class: "sm", onchange: e => { if (e.target.value) ack(p.id, "snooze", +e.target.value); }}, el("option", {value: ""}, "💤 " + t("snooze")), ...ch.map(m => el("option", {value: m}, t("snooze_n", {n: m})))),
+      el("button", {class: "btn sm", onclick: () => ack(p.id, "skip")}, t("skip"))))));
+}
+async function ack(id, kind, minutes) { await guard(async () => { await api("POST", "api/pending/" + id + "/" + kind, {minutes}); await refresh(); }); }
+function render() { ({rem: renderList, agenda: renderAgenda, hist: renderHist, set: renderSettings, help: renderHelp})[S.tab](); }
+
+/* ---------- lista ---------- */
+function remStatusBadge(r) {
+  const m = {active: ["st_active", "ok"], paused: ["st_paused", "warn"], off: ["st_off", ""], ended: ["st_ended", ""]}[r.status];
+  return el("span", {class: "badge " + m[1]}, t(m[0]));
+}
+function remCard(r) {
+  const cc = r.category ? r.category.color : "";
+  const next = r.next_at ? el("div", {class: "small"}, el("span", {class: "mut"}, t("next") + ": "), el("b", {}, fmt(r.next_at)), el("span", {class: "mut"}, " · " + rel(r.next_at))) : el("div", {class: "small mut"}, t("none_more"));
+  const bd = [remStatusBadge(r)];
+  if (r.category) bd.push(el("span", {class: "badge"}, r.category.name));
+  if (r.paused_until && r.paused_until > S.status.now) bd.push(el("span", {class: "badge warn"}, t("paused_until", {x: fmt(r.paused_until, {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"})})));
+  if (r.opts.repeat && r.opts.repeat.enabled) bd.push(el("span", {class: "badge"}, "🔁"));
+  if (r.remaining != null) bd.push(el("span", {class: "badge"}, t("remaining", {n: r.remaining})));
+  if (r.fired_count) bd.push(el("span", {class: "badge"}, t("fired_n", {n: r.fired_count})));
+  const paused = r.paused_until && r.paused_until > S.status.now;
+  const pauseCtl = paused ? el("button", {class: "btn sm", onclick: () => act(r, "pause", {days: 0}, "")}, "▶ " + t("resume"))
+    : el("select", {class: "sm", style: "min-height:30px;padding:2px 6px", onchange: e => { if (e.target.value) act(r, "pause", {days: +e.target.value}, ""); }}, el("option", {value: ""}, "⏸ " + t("pause")), ...[[1, "pause_1"], [3, "pause_3"], [7, "pause_7"], [30, "pause_30"]].map(([d, k]) => el("option", {value: d}, t(k))));
+  return el("div", {class: "card rem" + (r.status === "off" || r.status === "ended" ? " off" : ""), style: cc ? "--cc:" + cc : ""},
+    el("div", {class: "grow"},
+      el("div", {class: "row"}, el("h3", {class: "grow"}, r.title)),
+      el("div", {class: "small mut", style: "margin:2px 0 6px"}, describe(r.rule)),
+      next, el("div", {class: "chips", style: "margin-top:6px"}, ...bd),
+      el("div", {class: "acts"},
+        el("button", {class: "btn sm", onclick: () => openEditor(r)}, "✎ " + t("edit")),
+        el("button", {class: "btn sm", onclick: () => act(r, "test", undefined, t("tested"))}, "▶ " + t("test")),
+        r.next_at ? el("button", {class: "btn sm", onclick: () => act(r, "skip_next", undefined, null, j => t("skipped", {x: j.skipped.replace("T", " ")}))}, "⏭ " + t("skip_next")) : null,
+        r.enabled ? pauseCtl : null,
+        el("button", {class: "btn sm", onclick: () => act(r, "duplicate", undefined, "")}, "⧉"),
+        el("button", {class: "btn sm bad", onclick: () => delRem(r)}, "🗑"))),
+    el("label", {class: "switch", title: r.enabled ? t("disable") : t("enable")}, el("input", {type: "checkbox", checked: r.enabled, onchange: () => act(r, "toggle", undefined, "")}), el("span")));
+}
+async function act(r, what, body, msg, msgFn) {
+  await guard(async () => {
+    const j = await api("POST", "api/reminders/" + r.id + "/" + what, body === undefined ? {} : body);
+    if (msgFn) toast(msgFn(j)); else if (msg) toast(msg);
+    await refresh();
+  });
+}
+async function delRem(r) { if (!confirm(t("confirm_del", {x: r.title}))) return; await guard(async () => { await api("DELETE", "api/reminders/" + r.id); toast(t("deleted")); await refresh(); }); }
+function renderList() {
+  const v = $("#view");
+  const q = S.q.toLowerCase();
+  const list = S.rems.filter(r => (!S.fcat || String(r.category_id) === S.fcat) && (S.fst === "all" || (S.fst === "active" ? r.status === "active" || r.status === "paused" : r.status === S.fst)) && (!q || (r.title + " " + r.note).toLowerCase().includes(q)));
+  const quickIn = el("input", {type: "text", placeholder: t("quick_ph"), onkeydown: e => { if (e.key === "Enter") quickGo(); }});
+  const quickMin = el("select", {}, ...[5, 10, 15, 30, 60, 120].map(m => el("option", {value: m, selected: m === 10}, t("quick_min", {n: m}))));
+  async function quickGo() { const title = quickIn.value.trim(); if (!title) return; await guard(async () => { await api("POST", "api/quick", {title, minutes: +quickMin.value}); quickIn.value = ""; toast(t("saved")); await refresh(); }); }
+  const catChips = [el("span", {class: "chip" + (!S.fcat ? " on" : ""), onclick: () => { S.fcat = ""; render(); }}, t("all"))].concat(S.cats.map(c => el("span", {class: "chip" + (S.fcat === String(c.id) ? " on" : ""), onclick: () => { S.fcat = String(c.id); render(); }}, el("span", {class: "dot", style: "background:" + c.color}), c.name)));
+  const stSel = el("select", {onchange: e => { S.fst = e.target.value; render(); }}, ...[["active", "st_active"], ["off", "st_off"], ["ended", "st_ended"], ["all", "all"]].map(([k, l]) => el("option", {value: k, selected: S.fst === k}, t(l))));
+  v.replaceChildren(
+    el("div", {class: "card"}, el("div", {class: "small mut", style: "margin-bottom:6px"}, "⚡ " + t("quick")), el("div", {class: "quick"}, quickIn, quickMin, el("button", {class: "btn pri", onclick: quickGo}, t("add")))),
+    el("div", {class: "row", style: "margin-bottom:10px"}, el("input", {type: "text", placeholder: t("search"), value: S.q, class: "grow", oninput: e => { S.q = e.target.value; clearTimeout(window._qt); window._qt = setTimeout(renderList, 200); }}), stSel),
+    S.cats.length ? el("div", {class: "chips", style: "margin-bottom:12px"}, ...catChips) : null,
+    list.length ? el("div", {}, ...list.map(remCard)) : el("div", {class: "card mut"}, t("empty")));
+  const inp = $("#view input[type=text][placeholder='" + t("search") + "']");
+  if (inp && document.activeElement === document.body && S.q) { inp.focus(); inp.setSelectionRange(S.q.length, S.q.length); }
+}
+
+/* ---------- agenda ---------- */
+async function renderAgenda() {
+  const v = $("#view"); v.replaceChildren(el("div", {class: "mut"}, t("loading")));
+  await guard(async () => {
+    const ev = await api("GET", "api/schedule?days=14");
+    const groups = {};
+    ev.forEach(e => (groups[ymd(e.ts)] = groups[ymd(e.ts)] || []).push(e));
+    const out = Object.keys(groups).sort().map(k => el("div", {}, el("div", {class: "day"}, fmt(groups[k][0].ts, {weekday: "long", day: "numeric", month: "long"})),
+      el("div", {class: "card", style: "padding:6px 14px"}, ...groups[k].map(e => el("div", {class: "ag"}, el("span", {class: "tm"}, hm(e.ts)), el("span", {class: "dot", style: "background:" + (e.color || "var(--pri)")}), el("div", {class: "grow"}, e.title, e.category ? el("span", {class: "mut small"}, " · " + e.category) : null))))));
+    v.replaceChildren(...(out.length ? out : [el("div", {class: "card mut"}, t("none_more"))]));
+  });
+}
+
+/* ---------- historik ---------- */
+async function renderHist() {
+  const v = $("#view"); v.replaceChildren(el("div", {class: "mut"}, t("loading")));
+  await guard(async () => {
+    const h = await api("GET", "api/history?limit=200");
+    const col = {fired: "ok", done: "ok", error: "bad", unacked: "bad", missed: "warn", quiet_skip: "warn", home_skip: "warn"};
+    v.replaceChildren(el("div", {class: "card"}, ...(h.length ? h.map(x => el("div", {class: "hist"}, el("span", {class: "t"}, fmt(x.ts, {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"})), el("span", {class: "badge " + (col[x.kind] || "")}, t("h_" + x.kind)), el("span", {class: "grow"}, x.title, x.detail ? el("span", {class: "mut small"}, " · " + x.detail) : null))) : [el("div", {class: "mut"}, t("h_empty"))])));
+  });
+}
+
+/* ---------- hjälp ---------- */
+function renderHelp() {
+  const body = L[lang].help || L.en.help;
+  $("#view").replaceChildren(el("div", {class: "card help", html: (L[lang].help_note ? "<p><b>" + L[lang].help_note + "</b></p>" : "") + body}));
+}
+/* ---------- redigerare ---------- */
+let F = null, lastField = null, prevTimer = null;
+const PALETTE = ["#3b6ef5", "#1f9d55", "#d98a00", "#d64545", "#8a4df0", "#0aa5b8", "#e0559b", "#6b7280"];
+function mobileTargets() { return (S.targets ? S.targets.notify : []).filter(x => x.mobile); }
+function newForm() {
+  const dt = (S.settings.default_targets || []);
+  const mt = mobileTargets().map(x => x.id);
+  let tg = dt.filter(x => mt.includes(x)); if (!tg.length && mt.length) tg = [mt[0]];
+  return {id: null, title: "", note: "", category_id: "", enabled: true, mode: "repeat", freq: "day", interval: 1, start_date: ymd(S.status.now), start_time: "09:00",
+    times: ["09:00"], series: [], use_window: false, win_from: "08:00", win_to: "17:00", weekdays: [], monthdays: [], month_mode: "days", nth_n: [1], nth_wd: 0, months: [],
+    overflow: "clamp", end_mode: "never", end_date: "", count: 10, exdates: [], actions: [{type: "push", enabled: true, targets: tg, title: "", message: ""}],
+    opts: {repeat: {enabled: false, every_min: S.settings.repeat_every_min || 5, max: S.settings.repeat_max || 12}, buttons: true, ignore_quiet: false, only_home: false, urgent: false, auto_delete: false, duration_min: 15, url: ""}};
+}
+function formFromRem(r) {
+  const f = newForm(), u = r.rule;
+  Object.assign(f, {id: r.id, title: r.title, note: r.note, category_id: r.category_id || "", enabled: !!r.enabled, actions: JSON.parse(JSON.stringify(r.actions)), paused_until: r.paused_until});
+  f.opts = Object.assign(f.opts, JSON.parse(JSON.stringify(r.opts)));
+  f.mode = u.freq === "once" ? "once" : "repeat"; f.freq = u.freq === "once" ? "day" : u.freq; f.interval = u.interval || 1;
+  f.start_date = (u.start || "").slice(0, 10); f.start_time = (u.start || "").length > 10 ? u.start.slice(11, 16) : (u.freq === "minute" || u.freq === "hour" ? "00:00" : "09:00");
+  f.times = (u.times || []).slice(); f.series = (u.series || []).map(s => Object.assign({}, s));
+  if (u.window) { f.use_window = true; f.win_from = u.window.from; f.win_to = u.window.to; }
+  f.weekdays = (u.weekdays || []).slice(); f.monthdays = (u.monthdays || []).slice(); f.months = (u.months || []).slice();
+  if (u.nth) { f.month_mode = "nth"; f.nth_n = u.nth.n.slice(); f.nth_wd = u.nth.wd; }
+  f.overflow = u.overflow || "clamp";
+  if (u.end) { f.end_mode = "date"; f.end_date = u.end.slice(0, 10); } else if (u.count) { f.end_mode = "count"; f.count = u.count; }
+  f.exdates = (u.exdates || []).slice();
+  return f;
+}
+function ruleFromForm(f) {
+  if (f.mode === "once") return {freq: "once", start: f.start_date + "T" + (f.start_time || "09:00")};
+  const r = {freq: f.freq, interval: +f.interval || 1};
+  if (f.freq === "minute" || f.freq === "hour") {
+    r.start = f.start_date + "T" + (f.start_time || "00:00");
+    if (f.use_window) r.window = {from: f.win_from, to: f.win_to};
+  } else { r.start = f.start_date; r.times = f.times; r.series = f.series.map(s => ({from: s.from, to: s.to, every: +s.every || 0})); }
+  if (f.weekdays.length && ["minute", "hour", "day", "week"].includes(f.freq)) r.weekdays = f.weekdays;
+  if (f.freq === "month" || f.freq === "year") {
+    if (f.month_mode === "nth") r.nth = {n: f.nth_n, wd: +f.nth_wd}; else { r.monthdays = f.monthdays; r.overflow = f.overflow; }
+    if (f.freq === "year") r.months = f.months;
+  }
+  if (f.end_mode === "date" && f.end_date) r.end = f.end_date;
+  if (f.end_mode === "count") r.count = +f.count || 1;
+  if (f.exdates.length) r.exdates = f.exdates;
+  return r;
+}
+async function openEditor(r) {
+  await ensureTargets();
+  F = r ? formFromRem(r) : newForm();
+  paintEditor();
+}
+function closeEditor() { F = null; $("#modal").replaceChildren(); }
+function chipSet(list, val, label, onChange, single) {
+  const on = list.includes(val);
+  return el("span", {class: "chip" + (on ? " on" : ""), onclick: () => { if (single) { list.length = 0; list.push(val); } else if (on) list.splice(list.indexOf(val), 1); else list.push(val); list.sort((a, b) => a - b); onChange(); }}, label);
+}
+function tgList(items, sel, onchange, emptyKey) {
+  if (!items.length) return el("div", {class: "small mut"}, t(emptyKey || "targets_none"));
+  return el("div", {class: "tg"}, ...items.map(i => el("label", {}, el("input", {type: "checkbox", checked: sel.includes(i.id), onchange: e => { if (e.target.checked) { if (!sel.includes(i.id)) sel.push(i.id); } else sel.splice(sel.indexOf(i.id), 1); onchange && onchange(); }}), i.name, el("span", {class: "mut tiny"}, i.id))));
+}
+function inp(obj, key, attrs) {
+  return el("input", Object.assign({type: "text", value: obj[key] == null ? "" : obj[key], "data-var": "1", oninput: e => { obj[key] = e.target.value; }, onfocus: e => { lastField = e.target; }}, attrs || {}));
+}
+function area(obj, key, attrs) {
+  return el("textarea", Object.assign({"data-var": "1", oninput: e => { obj[key] = e.target.value; }, onfocus: e => { lastField = e.target; }}, attrs || {}), obj[key] || "");
+}
+function lab(text, ...kids) { return el("div", {}, el("label", {class: "f"}, text), ...kids); }
+function insertVar(v) {
+  const f = lastField && document.body.contains(lastField) ? lastField : null;
+  if (!f) { toast("↖ " + t("var_insert"), true); return; }
+  const s = f.selectionStart ?? f.value.length, e = f.selectionEnd ?? f.value.length;
+  f.value = f.value.slice(0, s) + v + f.value.slice(e); f.selectionStart = f.selectionEnd = s + v.length;
+  f.dispatchEvent(new Event("input")); f.focus();
+}
+function varBar() {
+  const vars = ["title", "message", "date", "time", "weekday", "n", "remaining", "next", "category"];
+  const box = el("div", {class: "chips", style: "margin:6px 0"}, el("span", {class: "mut small"}, t("var_insert") + ":"),
+    ...vars.map(v => el("span", {class: "chip", onmousedown: e => e.preventDefault(), onclick: () => insertVar("{" + v + "}")}, "{" + v + "}")));
+  const dl = el("datalist", {id: "entlist"});
+  const ei = el("input", {type: "text", list: "entlist", placeholder: "sensor.temperatur", style: "display:none;min-height:30px;padding:2px 8px", oninput: async e => { try { const r = await api("GET", "api/entities?q=" + encodeURIComponent(e.target.value)); dl.replaceChildren(...r.map(x => el("option", {value: x.id}, x.name))); } catch (x) {} },
+    onchange: e => { if (e.target.value) { insertVar("{state:" + e.target.value + "}"); e.target.value = ""; ei.style.display = "none"; } }});
+  box.append(el("span", {class: "chip", onmousedown: e => e.preventDefault(), onclick: () => { ei.style.display = ""; ei.focus(); }}, "{state:…}"), ei, dl);
+  return box;
+}
+function schedulePreview() {
+  clearTimeout(prevTimer);
+  prevTimer = setTimeout(async () => {
+    const box = $("#prevbox"); if (!box || !F) return;
+    try {
+      const j = await api("POST", "api/preview", {rule: ruleFromForm(F), n: 10});
+      box.replaceChildren(el("div", {class: "sum"}, describe(ruleFromForm(F))), el("div", {class: "small mut", style: "margin:2px 0"}, t("preview") + (j.remaining != null ? " · " + t("left_after", {n: j.remaining}) : "")),
+        j.items.length ? el("ol", {}, ...j.items.map(i => el("li", {}, fmt(i.ts, {weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"})))) : el("div", {class: "mut"}, t("preview_none")));
+    } catch (e) { box.replaceChildren(el("div", {class: "err"}, "⚠ " + errText(e))); }
+  }, 250);
+}
+function timesBlock() {
+  const ti = el("input", {type: "time", value: "09:00"});
+  const addT = () => { if (ti.value && !F.times.includes(ti.value)) { F.times.push(ti.value); F.times.sort(); paintEditor(); } };
+  return el("div", {}, lab(t("times")), el("div", {class: "chips"}, ...F.times.map(x => el("span", {class: "chip on", onclick: () => { F.times.splice(F.times.indexOf(x), 1); paintEditor(); }}, x, el("span", {class: "x"}, "✕"))), ti, el("button", {class: "btn sm", onclick: addT}, "+ " + t("add_time"))),
+    lab(t("series")), ...F.series.map((s, i) => el("div", {class: "row", style: "margin:4px 0"}, t("series_every"), el("input", {type: "number", min: 1, value: s.every, style: "width:70px", oninput: e => { s.every = +e.target.value; schedulePreview(); }}), t("series_min"), el("input", {type: "time", value: s.from, onchange: e => { s.from = e.target.value; schedulePreview(); }}), "–", el("input", {type: "time", value: s.to, onchange: e => { s.to = e.target.value; schedulePreview(); }}), el("button", {class: "btn sm bad", onclick: () => { F.series.splice(i, 1); paintEditor(); }}, "✕"))),
+    el("button", {class: "btn sm", style: "margin-top:4px", onclick: () => { F.series.push({from: "08:00", to: "17:00", every: 20}); paintEditor(); }}, "+ " + t("add_series")));
+}
+function dayPick() {
+  const days = el("div", {class: "chips"}, ...[...Array(31).keys()].map(i => i + 1).map(d => chipSet(F.monthdays, d, String(d), paintEditor)), chipSet(F.monthdays, -1, t("md_last"), paintEditor));
+  const nthChips = el("div", {class: "chips"}, ...[1, 2, 3, 4, 5, -1].map(n => chipSet(F.nth_n, n, t(n < 0 ? "nth_m1" : "nth_" + n), paintEditor)));
+  const wdSel = el("select", {onchange: e => { F.nth_wd = +e.target.value; schedulePreview(); }}, ...[0, 1, 2, 3, 4, 5, 6].map(i => el("option", {value: i, selected: +F.nth_wd === i}, wdName(i, "long"))), ...[7, 8, 9].map(i => el("option", {value: i, selected: +F.nth_wd === i}, wdKind(i))));
+  return el("div", {class: "sub"},
+    F.freq === "year" ? lab(t("months_label"), el("div", {class: "chips"}, ...[...Array(12).keys()].map(m => chipSet(F.months, m + 1, monName(m), paintEditor)))) : null,
+    el("div", {class: "seg", style: "margin-top:8px"}, el("button", {class: F.month_mode === "days" ? "on" : "", onclick: () => { F.month_mode = "days"; paintEditor(); }}, t("m_days")), el("button", {class: F.month_mode === "nth" ? "on" : "", onclick: () => { F.month_mode = "nth"; paintEditor(); }}, t("m_nth"))),
+    F.month_mode === "days" ? el("div", {}, lab(t("md_label")), days, lab(t("overflow")), el("select", {onchange: e => { F.overflow = e.target.value; schedulePreview(); }}, el("option", {value: "clamp", selected: F.overflow === "clamp"}, t("of_clamp")), el("option", {value: "skip", selected: F.overflow === "skip"}, t("of_skip"))))
+      : el("div", {}, lab(t("nth_1") + " … " + t("nth_m1")), nthChips, el("div", {style: "margin-top:6px"}, wdSel)));
+}
+function whenBlock() {
+  const ch = () => { paintEditor(); };
+  const seg = el("div", {class: "seg"}, el("button", {class: F.mode === "once" ? "on" : "", onclick: () => { F.mode = "once"; ch(); }}, t("w_once")), el("button", {class: F.mode === "repeat" ? "on" : "", onclick: () => { F.mode = "repeat"; ch(); }}, t("w_repeat")));
+  const kids = [seg];
+  if (F.mode === "once") {
+    kids.push(el("div", {class: "row", style: "margin-top:10px"}, el("input", {type: "date", value: F.start_date, onchange: e => { F.start_date = e.target.value; schedulePreview(); }}), el("input", {type: "time", value: F.start_time, onchange: e => { F.start_time = e.target.value; schedulePreview(); }})));
+    return el("div", {}, ...kids);
+  }
+  const units = ["minute", "hour", "day", "week", "month", "year"];
+  kids.push(el("div", {class: "row", style: "margin-top:10px"}, el("b", {}, t("every")), el("input", {type: "number", min: 1, max: 9999, value: F.interval, style: "width:80px", oninput: e => { F.interval = +e.target.value || 1; schedulePreview(); }}),
+    el("select", {onchange: e => { F.freq = e.target.value; ch(); }}, ...units.map(u => el("option", {value: u, selected: F.freq === u}, +F.interval === 1 ? t("u_" + u) : t("up_" + u))))));
+  const wdChips = (req) => el("div", {}, lab(req ? t("wd_req") : t("wd_filter")), el("div", {class: "chips"}, ...[0, 1, 2, 3, 4, 5, 6].map(i => chipSet(F.weekdays, i, wdName(i), () => { paintEditor(); }))));
+  if (F.freq === "minute" || F.freq === "hour") {
+    kids.push(el("div", {class: "sub"}, lab(t("starts")), el("div", {class: "row"}, el("input", {type: "date", value: F.start_date, onchange: e => { F.start_date = e.target.value; schedulePreview(); }}), el("input", {type: "time", value: F.start_time, onchange: e => { F.start_time = e.target.value; schedulePreview(); }})),
+      el("label", {class: "row small", style: "margin-top:8px"}, el("input", {type: "checkbox", checked: F.use_window, onchange: e => { F.use_window = e.target.checked; ch(); }}), t("window")),
+      F.use_window ? el("div", {class: "row"}, el("input", {type: "time", value: F.win_from, onchange: e => { F.win_from = e.target.value; schedulePreview(); }}), "–", el("input", {type: "time", value: F.win_to, onchange: e => { F.win_to = e.target.value; schedulePreview(); }})) : null, wdChips(false)));
+  } else {
+    if (F.freq === "week") kids.push(el("div", {class: "sub"}, wdChips(true)));
+    if (F.freq === "day") kids.push(el("div", {class: "sub"}, wdChips(false)));
+    if (F.freq === "month" || F.freq === "year") kids.push(dayPick());
+    kids.push(el("div", {class: "sub"}, timesBlock()));
+    kids.push(el("div", {class: "sub"}, lab(t("starts")), el("input", {type: "date", value: F.start_date, onchange: e => { F.start_date = e.target.value; schedulePreview(); }})));
+  }
+  const endOpts = [["never", "e_never"], ["date", "e_date"], ["count", "e_count"]];
+  kids.push(el("div", {class: "sub"}, lab(t("ends")), el("div", {class: "row"}, el("select", {onchange: e => { F.end_mode = e.target.value; ch(); }}, ...endOpts.map(([k, l]) => el("option", {value: k, selected: F.end_mode === k}, t(l)))),
+    F.end_mode === "date" ? el("input", {type: "date", value: F.end_date, onchange: e => { F.end_date = e.target.value; schedulePreview(); }}) : null,
+    F.end_mode === "count" ? el("input", {type: "number", min: 1, value: F.count, style: "width:90px", oninput: e => { F.count = +e.target.value; schedulePreview(); }}) : null)));
+  const ex = el("input", {type: "date"});
+  kids.push(el("div", {class: "sub"}, lab(t("exceptions")), el("div", {class: "chips"}, ...F.exdates.map(x => el("span", {class: "chip on", onclick: () => { F.exdates.splice(F.exdates.indexOf(x), 1); paintEditor(); }}, x.replace("T", " "), el("span", {class: "x"}, "✕"))), ex, el("button", {class: "btn sm", onclick: () => { if (ex.value && !F.exdates.includes(ex.value)) { F.exdates.push(ex.value); F.exdates.sort(); paintEditor(); } }}, "+ " + t("add_exc")))));
+  return el("div", {}, ...kids);
+}
+function actionCard(a, i) {
+  const tg = S.targets || {};
+  const hdr = el("div", {class: "row"}, el("b", {class: "grow"}, t("a_" + a.type)), el("label", {class: "row small"}, el("input", {type: "checkbox", checked: a.enabled !== false, onchange: e => { a.enabled = e.target.checked; }}), t("act_enabled")),
+    el("button", {class: "btn sm", onclick: async () => { await guard(async () => { const j = await api("POST", "api/test_action", {action: a}); toast((j.ok ? "✓ " : "✗ ") + (j.detail || ""), !j.ok); }); }}, "▶ " + t("test")),
+    el("button", {class: "btn sm bad", onclick: () => { F.actions.splice(i, 1); paintEditor(); }}, "✕"));
+  const body = [];
+  const textPair = () => [lab(t("title_ov"), inp(a, "title")), lab(t("msg"), area(a, "message", {style: "min-height:56px;font-family:inherit;font-size:14px"}))];
+  if (a.type === "push") body.push(lab(t("targets"), tgList(mobileTargets(), a.targets = a.targets || [])), ...textPair());
+  if (a.type === "notify") body.push(lab(t("targets"), tgList(tg.notify || [], a.targets = a.targets || [])), ...textPair(), lab(t("data"), area(a, "data", {placeholder: '{"parse_mode":"html"}'})));
+  if (a.type === "persistent") body.push(...textPair());
+  if (a.type === "tts") body.push(lab(t("targets"), tgList(tg.media_players || [], a.targets = a.targets || [])), lab(t("tts_text"), area(a, "text", {style: "min-height:56px;font-family:inherit;font-size:14px", placeholder: "{title}. {message}"})),
+    el("div", {class: "row"}, lab(t("engine"), el("select", {onchange: e => { a.tts_entity = e.target.value; }}, el("option", {value: ""}, t("engine_def")), ...(tg.tts_entities || []).map(x => el("option", {value: x.id, selected: a.tts_entity === x.id}, x.name)))), lab(t("lang"), inp(a, "language", {style: "width:90px", placeholder: "sv"})), lab(t("volume"), inp(a, "volume", {type: "number", min: 0, max: 100, style: "width:90px"}))));
+  if (a.type === "sound") body.push(lab(t("targets"), tgList(tg.media_players || [], a.targets = a.targets || [])), el("div", {class: "row"}, lab(t("source"), el("select", {onchange: e => { a.source = e.target.value; }}, el("option", {value: "file", selected: a.source !== "url"}, t("src_file")), el("option", {value: "url", selected: a.source === "url"}, t("src_url")))), lab(t("value"), inp(a, "value", {style: "min-width:230px", placeholder: "ding.mp3"})), lab(t("volume"), inp(a, "volume", {type: "number", min: 0, max: 100, style: "width:90px"}))));
+  if (a.type === "service") { const dl = el("datalist", {id: "svclist"}, ...(tg.services || []).map(s => el("option", {value: s}))); body.push(lab(t("service"), inp(a, "service", {list: "svclist", placeholder: "light.turn_on"}), dl), lab(t("data"), area(a, "data", {placeholder: '{"entity_id":"light.hall"}'}))); }
+  if (a.type === "set_entity") body.push(el("div", {class: "row"}, lab(t("entity"), inp(a, "entity_id", {placeholder: "input_boolean.larm", style: "min-width:230px"})), lab(t("value"), inp(a, "value", {placeholder: "on"}))));
+  if (a.type === "event") body.push(el("div", {class: "row"}, lab(t("ev_name"), inp(a, "event", {placeholder: "mitt_event"}))), lab(t("data"), area(a, "data", {placeholder: '{"text":"{title}"}'})));
+  if (["push", "notify", "persistent", "tts", "sound"].includes(a.type)) body.push(el("label", {class: "row small", style: "margin-top:6px"}, el("input", {type: "checkbox", checked: a.repeat !== false, onchange: e => { a.repeat = e.target.checked; }}), t("act_repeat")));
+  return el("div", {class: "sub"}, hdr, ...body);
+}
+function optsBlock() {
+  const o = F.opts, r = o.repeat;
+  const chk = (key, text, extra) => el("label", {class: "row", style: "margin:6px 0"}, el("input", {type: "checkbox", checked: !!o[key], onchange: e => { o[key] = e.target.checked; }}), text, extra);
+  return el("div", {},
+    el("div", {class: "sub"}, el("label", {class: "row"}, el("input", {type: "checkbox", checked: r.enabled, onchange: e => { r.enabled = e.target.checked; paintEditor(); }}), el("b", {}, t("o_repeat"))),
+      r.enabled ? el("div", {class: "row", style: "margin-top:8px"}, t("o_every"), el("input", {type: "number", min: 1, value: r.every_min, style: "width:80px", oninput: e => { r.every_min = +e.target.value; }}), "min", t("o_max"), el("input", {type: "number", min: 1, value: r.max, style: "width:80px", oninput: e => { r.max = +e.target.value; }}), t("o_times")) : null),
+    chk("buttons", t("o_buttons")), chk("ignore_quiet", t("o_quiet")), chk("only_home", t("o_home")), chk("urgent", t("o_urgent")), chk("auto_delete", t("o_autodel")),
+    el("div", {class: "row"}, lab(t("o_snooze"), el("input", {type: "number", min: 1, value: o.snooze_min || "", placeholder: String(S.settings.snooze_min || 10), style: "width:90px", oninput: e => { o.snooze_min = e.target.value ? +e.target.value : null; }})),
+      lab(t("o_dur"), el("input", {type: "number", min: 1, value: o.duration_min, style: "width:90px", oninput: e => { o.duration_min = +e.target.value || 15; }})),
+      lab(t("o_grace"), el("input", {type: "number", min: 0, value: o.grace_min == null ? "" : o.grace_min, placeholder: String(S.settings.grace_min || 60), style: "width:90px", oninput: e => { o.grace_min = e.target.value === "" ? null : +e.target.value; }}))),
+    lab(t("o_url"), inp(o, "url", {placeholder: "/lovelace/0"})));
+}
+function paintEditor() {
+  const f = F; if (!f) return;
+  const catSel = el("select", {onchange: async e => {
+    if (e.target.value === "__new") { const name = prompt(t("cat_name")); if (name) { await guard(async () => { const c = await api("POST", "api/categories", {name, color: PALETTE[S.cats.length % PALETTE.length]}); S.cats = await api("GET", "api/categories"); f.category_id = c.id; }); } paintEditor(); } else f.category_id = e.target.value; }},
+    el("option", {value: ""}, t("f_cat_none")), ...S.cats.map(c => el("option", {value: c.id, selected: String(f.category_id) === String(c.id)}, c.name)), el("option", {value: "__new"}, t("f_cat_new")));
+  const addSel = el("select", {onchange: e => { const ty = e.target.value; if (!ty) return; const base = {type: ty, enabled: true}; if (ty === "push") base.targets = mobileTargets().slice(0, 1).map(x => x.id); f.actions.push(Object.assign(base, ty === "tts" || ty === "sound" || ty === "notify" ? {targets: []} : {})); paintEditor(); }},
+    el("option", {value: ""}, t("add_act")), ...["push", "notify", "persistent", "tts", "sound", "service", "set_entity", "event"].map(k => el("option", {value: k}, t("a_" + k))));
+  const sheet = el("div", {class: "sheet"},
+    el("div", {class: "sheet-h"}, el("h2", {}, f.id ? t("ed_edit") : t("ed_new")), el("button", {class: "btn sm ghost", onclick: closeEditor}, "✕ " + t("close"))),
+    el("div", {class: "sheet-b"},
+      el("div", {class: "sec", style: "margin-top:0"}, t("s_what")),
+      lab(t("f_title"), inp(f, "title", {autofocus: !f.id, style: "width:100%", maxlength: 200})), lab(t("f_note"), area(f, "note", {style: "min-height:56px;font-family:inherit;font-size:14px"})), lab(t("f_cat"), catSel),
+      el("div", {class: "sec"}, t("s_when")), whenBlock(), el("div", {class: "prev", id: "prevbox"}, el("span", {class: "mut"}, t("loading"))),
+      el("div", {class: "sec"}, t("s_how")), el("div", {class: "small mut"}, t("how_hint")), varBar(), ...f.actions.map(actionCard), addSel,
+      el("div", {class: "sec"}, t("s_opts")), optsBlock()),
+    el("div", {class: "sheet-f"}, el("button", {class: "btn", onclick: closeEditor}, t("cancel")), f.id ? el("button", {class: "btn", onclick: async () => { await guard(async () => { await api("POST", "api/reminders/" + f.id + "/test", {}); toast(t("tested")); }); }}, "▶ " + t("test")) : null,
+      el("button", {class: "btn pri", onclick: saveEditor}, t("save"))));
+  const keepScroll = $("#modal .overlay") ? $("#modal .overlay").scrollTop : 0;
+  const ov = el("div", {class: "overlay"}, sheet);
+  $("#modal").replaceChildren(ov); ov.scrollTop = keepScroll;
+  schedulePreview();
+}
+async function saveEditor() {
+  const f = F; if (!f) return;
+  if (!f.title.trim()) { toast(t("err_title"), true); return; }
+  const body = {title: f.title, note: f.note, category_id: f.category_id || null, enabled: f.enabled, rule: ruleFromForm(f), actions: f.actions, opts: f.opts};
+  await guard(async () => {
+    if (f.id) await api("PUT", "api/reminders/" + f.id, body); else await api("POST", "api/reminders", body);
+    closeEditor(); toast(t("saved")); await refresh();
+  });
+}
+/* ---------- inställningar ---------- */
+async function renderSettings() {
+  const v = $("#view"); v.replaceChildren(el("div", {class: "mut"}, t("loading")));
+  const tg = await ensureTargets();
+  let integ = null; try { integ = await api("GET", "api/integration"); } catch (e) {}
+  S.settings = await api("GET", "api/settings"); S.cats = await api("GET", "api/categories");
+  const W = JSON.parse(JSON.stringify(S.settings));
+  const homeExtra = {v: (W.home_entities || []).filter(x => !(tg.persons || []).some(p => p.id === x)).join(", ")};
+  const num = (k, w) => el("input", {type: "number", min: 0, value: W[k], style: "width:" + (w || 90) + "px", oninput: e => { W[k] = +e.target.value; }});
+  const chk = (k, text) => el("label", {class: "row", style: "margin:6px 0"}, el("input", {type: "checkbox", checked: !!W[k], onchange: e => { W[k] = e.target.checked; }}), text);
+  const choices = {v: (W.snooze_choices || []).join(", ")};
+  const save = el("button", {class: "btn pri", onclick: () => guard(async () => {
+    const persons = (W.home_entities || []).filter(x => (tg.persons || []).some(p => p.id === x));
+    W.home_entities = persons.concat(homeExtra.v.split(",").map(s => s.trim()).filter(Boolean));
+    W.snooze_choices = choices.v.split(/[ ,;]+/).map(Number).filter(n => n > 0);
+    S.settings = await api("POST", "api/settings", W); toast(t("set_saved"));
+  })}, t("save"));
+  const quiet = el("div", {class: "card"}, el("div", {class: "sec", style: "margin-top:0"}, t("set_quiet")), chk("quiet_enabled", t("quiet_on")),
+    el("div", {class: "row"}, lab(t("quiet_from"), el("input", {type: "time", value: W.quiet_from, onchange: e => { W.quiet_from = e.target.value; }})), lab(t("quiet_to"), el("input", {type: "time", value: W.quiet_to, onchange: e => { W.quiet_to = e.target.value; }})),
+      lab(t("quiet_mode"), el("select", {onchange: e => { W.quiet_mode = e.target.value; }}, el("option", {value: "delay", selected: W.quiet_mode !== "skip"}, t("q_delay")), el("option", {value: "skip", selected: W.quiet_mode === "skip"}, t("q_skip"))))),
+    el("div", {class: "sec"}, t("set_home")), el("div", {class: "small mut"}, t("set_home_hint")),
+    tgList((tg.persons || []).map(p => ({id: p.id, name: p.name})), W.home_entities = W.home_entities || [], null),
+    lab("device_tracker.x, binary_sensor.x …", el("input", {type: "text", value: homeExtra.v, style: "width:100%", oninput: e => { homeExtra.v = e.target.value; }})));
+  const gen = el("div", {class: "card"}, el("div", {class: "sec", style: "margin-top:0"}, t("set_targets")), tgList(tg.notify || [], W.default_targets = W.default_targets || []),
+    el("div", {class: "sec"}, t("set_tts")), el("div", {class: "row"}, lab(t("engine"), el("select", {onchange: e => { W.tts_entity = e.target.value; }}, el("option", {value: ""}, t("engine_def")), ...(tg.tts_entities || []).map(x => el("option", {value: x.id, selected: W.tts_entity === x.id}, x.name)))), lab(t("lang"), el("input", {type: "text", value: W.tts_language, style: "width:90px", placeholder: "sv", oninput: e => { W.tts_language = e.target.value; }}))),
+    el("div", {class: "row", style: "margin-top:8px"}, lab(t("set_snooze"), num("snooze_min")), lab(t("set_choices"), el("input", {type: "text", value: choices.v, style: "width:140px", oninput: e => { choices.v = e.target.value; }})), lab(t("set_grace"), num("grace_min")), lab(t("o_repeat") + ": " + t("o_every") + " (min)", num("repeat_every_min")), lab(t("o_repeat") + ": " + t("o_max"), num("repeat_max")), lab(t("set_hist"), num("keep_history_days"))));
+  const catRows = S.cats.map(c => { const row = {id: c.id, name: c.name, color: c.color};
+    return el("div", {class: "row", style: "margin:6px 0"}, el("input", {type: "color", value: row.color, style: "width:44px;height:38px;padding:2px", onchange: e => { row.color = e.target.value; }}), el("input", {type: "text", value: row.name, class: "grow", oninput: e => { row.name = e.target.value; }}),
+      el("button", {class: "btn sm", onclick: () => guard(async () => { await api("POST", "api/categories", row); toast(t("saved")); await refresh(false); })}, t("save")),
+      el("button", {class: "btn sm bad", onclick: () => guard(async () => { if (!confirm(t("confirm_del", {x: row.name}))) return; await api("DELETE", "api/categories/" + c.id); await refresh(false); renderSettings(); })}, "🗑")); });
+  const nc = {name: "", color: PALETTE[S.cats.length % PALETTE.length]};
+  const cats = el("div", {class: "card"}, el("div", {class: "sec", style: "margin-top:0"}, t("set_cat")), ...catRows,
+    el("div", {class: "row", style: "margin-top:8px"}, el("input", {type: "color", value: nc.color, style: "width:44px;height:38px;padding:2px", onchange: e => { nc.color = e.target.value; }}), el("input", {type: "text", placeholder: t("cat_name"), class: "grow", oninput: e => { nc.name = e.target.value; }}),
+      el("button", {class: "btn sm", onclick: () => guard(async () => { await api("POST", "api/categories", nc); await refresh(false); renderSettings(); })}, t("add"))));
+  const stLbl = (ok, cur) => !ok ? el("span", {class: "badge bad"}, t("int_missing")) : cur ? el("span", {class: "badge ok"}, t("int_ok")) : el("span", {class: "badge warn"}, t("int_old"));
+  const integCard = el("div", {class: "card"}, el("div", {class: "sec", style: "margin-top:0"}, t("set_int")),
+    !integ ? null : !integ.mounted ? el("div", {}, el("div", {class: "small mut"}, t("int_unmounted")), el("div", {class: "row", style: "margin-top:8px"}, el("a", {class: "btn sm", href: "api/integration.zip", download: ""}, "⬇ " + t("int_dl_int")), el("a", {class: "btn sm", href: "reminders-pro-cards.js", download: ""}, "⬇ " + t("int_dl_card")))) : el("div", {},
+      el("div", {class: "row"}, el("b", {}, t("int_cal") + " (calendar.reminders_pro)"), stLbl(integ.integration_installed, integ.integration_current)),
+      el("div", {class: "row", style: "margin-top:6px"}, el("b", {}, t("int_card") + " (/local/reminders-pro-cards.js)"), stLbl(integ.card_installed, integ.card_current)),
+      (integ.restart_needed || !integ.integration_installed) ? el("div", {class: "small", style: "margin-top:8px"}, "⚠ " + t("int_restart")) : null,
+      el("div", {class: "tiny mut", style: "margin-top:6px"}, t("int_url") + ": " + integ.url),
+      el("button", {class: "btn sm", style: "margin-top:8px", onclick: () => guard(async () => { const j = await api("POST", "api/integration/install"); toast(j.error ? j.error : t("saved"), !!j.error); if (j.resource === false) toast(t("int_resource_no"), true); renderSettings(); })}, t("int_install"))));
+  const mode = {v: "merge"}, fileIn = el("input", {type: "file", accept: "application/json,.json", style: "display:none", onchange: async e => {
+    const f = e.target.files[0]; if (!f) return;
+    await guard(async () => { const data = JSON.parse(await f.text()); const j = await api("POST", "api/import", {data, mode: mode.v}); toast(t("imp_done", {n: j.imported})); await refresh(false); renderSettings(); }); e.target.value = ""; }});
+  const data = el("div", {class: "card"}, el("div", {class: "sec", style: "margin-top:0"}, t("set_data")), el("div", {class: "row"},
+    el("button", {class: "btn", onclick: () => guard(async () => { const r = await fetch("api/export"); const b = await r.blob(); const a = el("a", {href: URL.createObjectURL(b), download: "reminders-pro-export.json"}); document.body.append(a); a.click(); a.remove(); })}, "⬇ " + t("export")),
+    el("select", {onchange: e => { mode.v = e.target.value; }}, el("option", {value: "merge"}, t("imp_merge")), el("option", {value: "replace"}, t("imp_replace"))),
+    el("button", {class: "btn", onclick: () => fileIn.click()}, "⬆ " + t("import")), fileIn,
+    el("button", {class: "btn bad", onclick: () => guard(async () => { await api("DELETE", "api/history"); toast(t("deleted")); })}, t("clear_hist"))));
+  v.replaceChildren(quiet, gen, el("div", {class: "row", style: "margin-bottom:12px"}, save), cats, integCard, data);
+}
+
+/* ---------- start ---------- */
+(async function init() {
+  $("#newbtn").addEventListener("click", () => openEditor(null));
+  $("#langsel").addEventListener("change", async e => { lang = e.target.value; try { await api("POST", "api/lang", {lang}); } catch (x) {} renderChrome(); renderBanner(); render(); if (F) paintEditor(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && F) closeEditor(); });
+  try { await loadAll(); lang = L[S.status.lang] ? S.status.lang : "sv"; } catch (e) { toast(errText(e), true); }
+  ensureTargets();
+  renderChrome(); renderBanner(); render();
+  let n = 0;
+  setInterval(() => {
+    if (document.hidden || F) return;
+    n++;
+    const typing = document.activeElement && ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName);
+    refresh(n % 4 === 0 && !typing && (S.tab === "rem" || S.tab === "agenda"));
+  }, 15000);
+})();
+</script></body></html>
