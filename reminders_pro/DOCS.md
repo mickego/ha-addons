@@ -76,6 +76,16 @@ Automation example:
         message: "{{ trigger.event.data.title }} – {{ trigger.event.data.message }}"
 ```
 
+## 4b. Own buttons, Android TV and conditions
+
+**Own buttons (mobile push).** Under *Options → Buttons in the mobile notification* press **+ Own button** and choose what should happen: toggle / turn on / turn off an entity, start an automation, run a script, activate a scene, press a button entity, call a service (with JSON data), set an entity to a value, or fire an event. "After the press" decides whether the reminder is also marked as done. Your buttons are shown first, then Done / Snooze / Skip (untick the ones you do not want). The Android app shows at most 3 buttons in total.
+
+**Android TV / Fire TV.** Add the way *Android TV / Fire TV notification* and pick the notify service from the *Notifications for Android TV* integration (`nfandroidtv`). Optional: duration, position, text size, transparency, colour, icon and image URL. Extra JSON is merged into `data`.
+
+**Conditions (exceptions on entity state).** Under *Options → Conditions* choose **Only send if …** or **Skip if …**, whether *all* or *any* of the conditions must match, and add rows: entity, optional attribute, comparison (equals, is not, greater than, at least, less than, at most, contains, is one of) and value. Examples: `sensor.outdoor_temp` less than `5`; `person.anna` equals `home`; `sensor.x` is one of `on, open`. The value may use variables, e.g. `{state:input_number.limit}`. A skipped reminder appears in History as *Condition not met*. Test runs ignore conditions.
+
+Pressing a custom button fires the event `reminders_pro_button` (`label`, `index`, `token`, `title`). You can also press a button from an automation: event `reminders_pro_command` with `{"cmd":"button","token":"…","index":0}`.
+
 ## 5. Manual installation of calendar and cards
 
 If the add-on cannot reach your configuration folder, copy `custom_components/reminders_pro` and `www/reminders-pro-cards.js` from the add-on's download area yourself, restart Home Assistant and add `/local/reminders-pro-cards.js` as a *JavaScript module* under *Dashboards → Resources*.
@@ -160,6 +170,16 @@ Automationsexempel:
       data:
         message: "{{ trigger.event.data.title }} – {{ trigger.event.data.message }}"
 ```
+
+## 4b. Egna knappar, Android TV och villkor
+
+**Egna knappar (mobilpush).** Under *Alternativ → Knappar i mobilnotisen* trycker du **+ Egen knapp** och väljer vad som ska hända: växla / slå på / slå av en entitet, starta en automation, köra ett skript, aktivera en scen, trycka på en knapp-entitet, anropa en tjänst (med JSON-data), sätta en entitet till ett värde eller skicka ett event. ”Efter tryck” avgör om påminnelsen också markeras som klar. Dina knappar visas först, sedan Klart / Snooze / Hoppa över (bocka ur de du inte vill ha). Androidappen visar högst 3 knappar totalt.
+
+**Android TV / Fire TV.** Lägg till sättet *Android TV / Fire TV-notis* och välj notify-tjänsten från integrationen *Notifications for Android TV* (`nfandroidtv`). Valfritt: visningstid, position, textstorlek, genomskinlighet, färg samt ikon och bild (webbadress). Extra JSON slås ihop med `data`.
+
+**Villkor (undantag på entitetsstatus).** Under *Alternativ → Villkor* väljer du **Skicka bara om …** eller **Hoppa över om …**, om *alla* eller *något* villkor ska stämma, och lägger till rader: entitet, valfritt attribut, jämförelse (är lika med, är inte, större än, minst, mindre än, högst, innehåller, är någon av) och värde. Exempel: `sensor.utetemp` mindre än `5`; `person.anna` är lika med `home`; `sensor.x` är någon av `on, open`. Värdet får innehålla variabler, t.ex. `{state:input_number.gräns}`. En överhoppad påminnelse syns i Historik som *Villkor ej uppfyllt*. Testkörning ignorerar villkor.
+
+När en egen knapp trycks skickas eventet `reminders_pro_button` (`label`, `index`, `token`, `title`). Du kan också trycka en knapp från en automation: event `reminders_pro_command` med `{"cmd":"button","token":"…","index":0}`.
 
 ## 5. Manuell installation av kalender och kort
 

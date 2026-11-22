@@ -18,7 +18,7 @@ from i18n import S, T
 
 log = logging.getLogger("engine")
 
-ALERT = ("push", "notify", "persistent", "tts", "sound")
+ALERT = ("push", "notify", "tv", "persistent", "tts", "sound")
 ACTION_TYPES = ALERT + ("service", "set_entity", "event")
 _LAST_PUB = {"ts": 0.0}
 _PUB_LOCK = asyncio.Lock()
@@ -112,7 +112,19 @@ def clean_actions(lst):
         x = {"type": t, "enabled": bool(a.get("enabled", True))}
         if "repeat" in a and t in ALERT:
             x["repeat"] = bool(a["repeat"])
-        if t in ("push", "notify"):
+        if t == "tv":
+            x["targets"] = _strs(a.get("targets"))
+            x["title"] = str(a.get("title") or "").strip()
+            x["message"] = str(a.get("message") or "").strip()
+            for k in ("position", "fontsize", "transparency", "color", "icon", "image"):
+                if str(a.get(k) or "").strip():
+                    x[k] = str(a[k]).strip()[:300]
+            if a.get("duration") not in (None, ""):
+                x["duration"] = max(1, min(int(a["duration"]), 300))
+            if a.get("interrupt"):
+                x["interrupt"] = True
+            x["data"] = _json_text(a.get("data"))
+        elif t in ("push", "notify"):
             x["targets"] = _strs(a.get("targets"))
             x["title"] = str(a.get("title") or "").strip()
             x["message"] = str(a.get("message") or "").strip()
@@ -150,6 +162,56 @@ def clean_actions(lst):
     return out
 
 
+BTN_KINDS = ("toggle", "turn_on", "turn_off", "automation", "script", "scene", "press", "service", "set_entity", "event")
+COND_OPS = ("eq", "ne", "gt", "ge", "lt", "le", "contains", "in")
+_ENT = re.compile(r"[a-z0-9_]+\.[a-z0-9_]+")
+
+
+def clean_buttons(lst):
+    out = []
+    for b in (lst or [])[:6]:
+        kind = b.get("kind")
+        if kind not in BTN_KINDS:
+            raise ApiError("err_button", str(kind))
+        x = {"label": (str(b.get("label") or "").strip() or "OK")[:30], "kind": kind,
+             "after": "done" if b.get("after") == "done" else "none"}
+        if kind in ("toggle", "turn_on", "turn_off", "automation", "script", "scene", "press", "set_entity"):
+            ent = str(b.get("entity_id") or "").strip()
+            if not _ENT.fullmatch(ent):
+                raise ApiError("err_entity", ent)
+            x["entity_id"] = ent
+            if kind == "set_entity":
+                x["value"] = str(b.get("value") if b.get("value") is not None else "")
+        elif kind == "service":
+            svc = str(b.get("service") or "").strip()
+            if not _ENT.fullmatch(svc):
+                raise ApiError("err_service", svc)
+            x.update(service=svc, data=_json_text(b.get("data")))
+        elif kind == "event":
+            ev = str(b.get("event") or "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9_]+", ev):
+                raise ApiError("err_event", ev)
+            x.update(event=ev, data=_json_text(b.get("data")))
+        out.append(x)
+    return out
+
+
+def clean_conditions(c):
+    c = c or {}
+    items = []
+    for it in (c.get("items") or [])[:10]:
+        ent = str(it.get("entity_id") or "").strip()
+        if not ent:
+            continue
+        if not _ENT.fullmatch(ent):
+            raise ApiError("err_entity", ent)
+        op = it.get("op") if it.get("op") in COND_OPS else "eq"
+        items.append({"entity_id": ent, "attribute": str(it.get("attribute") or "").strip(), "op": op,
+                      "value": str(it.get("value") if it.get("value") is not None else "")})
+    return {"enabled": bool(c.get("enabled")) and bool(items), "action": "skip_if" if c.get("action") == "skip_if" else "run_if",
+            "mode": "any" if c.get("mode") == "any" else "all", "items": items}
+
+
 def clean_opts(o):
     o = o or {}
     r = o.get("repeat") or {}
@@ -158,6 +220,9 @@ def clean_opts(o):
                    "every_min": max(1, min(int(r.get("every_min") or 5), 1440)),
                    "max": max(1, min(int(r.get("max") or 12), 1000))},
         "buttons": bool(o.get("buttons", True)),
+        "std_buttons": [k for k in ("done", "snooze", "skip") if k in (o.get("std_buttons") or ["done", "snooze", "skip"])],
+        "custom_buttons": clean_buttons(o.get("custom_buttons")),
+        "conditions": clean_conditions(o.get("conditions")),
         "ignore_quiet": bool(o.get("ignore_quiet")),
         "only_home": bool(o.get("only_home")),
         "urgent": bool(o.get("urgent")),
@@ -585,10 +650,14 @@ async def _volume(act, targets):
 
 
 def _buttons(token, d, opts):
+    """Egna knappar först, sedan standardknapparna. Android visar högst 3."""
     n = int(opts.get("snooze_min") or d.get("snooze_min") or 10)
-    return [{"action": f"RP|done|{token}", "title": T("done")},
-            {"action": f"RP|snooze|{n}|{token}", "title": T("snooze", n=n)},
-            {"action": f"RP|skip|{token}", "title": T("skip")}]
+    std = {"done": {"action": f"RP|done|{token}", "title": T("done")},
+           "snooze": {"action": f"RP|snooze|{n}|{token}", "title": T("snooze", n=n)},
+           "skip": {"action": f"RP|skip|{token}", "title": T("skip")}}
+    out = [{"action": f"RP|btn|{i}|{token}", "title": b["label"]} for i, b in enumerate(opts.get("custom_buttons") or [])]
+    out += [std[k] for k in (opts.get("std_buttons") or ["done", "snooze", "skip"]) if k in std]
+    return out[:3]
 
 
 async def run_action(act, snap, ctx, d, token=None, prefix="", needs_ack=False):
@@ -596,6 +665,40 @@ async def run_action(act, snap, ctx, d, token=None, prefix="", needs_ack=False):
     t = act["type"]
     opts = snap.get("opts") or {}
     tag = f"rp_{snap.get('rem_id') or 'x'}"
+    if t == "tv":
+        title = prefix + await render(act.get("title") or "{title}", ctx)
+        msg = await render(act.get("message") or snap.get("note") or T("default_msg"), ctx)
+        targets = act.get("targets") or []
+        if not targets:
+            raise RuntimeError("No notification target selected")
+        data = {}
+        for k in ("position", "fontsize", "transparency", "color"):
+            if act.get(k):
+                data[k] = act[k]
+        if act.get("duration"):
+            data["duration"] = int(act["duration"])
+        if act.get("interrupt"):
+            data["interrupt"] = 1
+        for k in ("icon", "image"):
+            if act.get(k):
+                data[k] = {"url": await render(act[k], ctx)}
+        if act.get("data"):
+            extra = await tpl.render_json(json.loads(act["data"]), ctx, ha.get_state)
+            if isinstance(extra, dict):
+                data.update(extra)
+        errs = []
+        for tg in targets:
+            svc = tg.split(".", 1)[1] if tg.startswith("notify.") else tg
+            payload = {"title": title, "message": msg}
+            if data:
+                payload["data"] = data
+            try:
+                await ha.call("notify", svc, payload)
+            except Exception as e:
+                errs.append(f"{tg}: {e}")
+        if errs:
+            raise RuntimeError("; ".join(errs))
+        return title
     if t in ("push", "notify", "persistent"):
         title = prefix + await render(act.get("title") or "{title}", ctx)
         msg = await render(act.get("message") or snap.get("note") or T("default_msg"), ctx)
@@ -619,7 +722,7 @@ async def run_action(act, snap, ctx, d, token=None, prefix="", needs_ack=False):
                 if opts.get("urgent"):
                     data["channel"] = "alarm_stream"
                     data["push"] = {"interruption-level": "critical", "sound": {"name": "default", "critical": 1, "volume": 1.0}}
-                if token and opts.get("buttons", True):
+                if token and (opts.get("buttons", True) or opts.get("custom_buttons")):
                     data["actions"] = _buttons(token, d, opts)
                     data["sticky"] = "true"
                 payload["data"] = data
@@ -709,6 +812,103 @@ async def run_actions(snap, ctx, d, *, token=None, prefix="", needs_ack=False, o
     return ok, errs
 
 
+# ------------------------------------------------------------------ villkor och egna knappar
+def _num(v):
+    try:
+        return float(str(v).replace(",", "."))
+    except (TypeError, ValueError):
+        return None
+
+
+def compare(op, actual, expected):
+    if actual is None:
+        return op == "ne"
+    a, e = str(actual), str(expected)
+    if op == "in":
+        return a.strip().lower() in [x.strip().lower() for x in e.split(",")]
+    if op == "contains":
+        return e.strip().lower() in a.strip().lower()
+    na, ne_ = _num(a), _num(e)
+    if op in ("gt", "ge", "lt", "le"):
+        if na is None or ne_ is None:
+            return False
+        return {"gt": na > ne_, "ge": na >= ne_, "lt": na < ne_, "le": na <= ne_}[op]
+    same = (na == ne_) if (na is not None and ne_ is not None) else (a.strip().lower() == e.strip().lower())
+    return same if op == "eq" else not same
+
+
+async def conditions_ok(opts, ctx):
+    """True om påminnelsen får köras. Returnerar (ok, förklaring)."""
+    c = opts.get("conditions") or {}
+    if not c.get("enabled") or not c.get("items"):
+        return True, ""
+    res, why = [], []
+    for it in c["items"]:
+        st = await ha.get_state(it["entity_id"])
+        if not st:
+            actual = None
+        elif it.get("attribute"):
+            actual = (st.get("attributes") or {}).get(it["attribute"])
+        else:
+            actual = st.get("state")
+        exp = await render(it.get("value", ""), ctx)
+        r = compare(it["op"], actual, exp)
+        res.append(r)
+        why.append(f"{it['entity_id']}{'.' + it['attribute'] if it.get('attribute') else ''} {it['op']} {exp} -> {actual}")
+    matched = any(res) if c.get("mode") == "any" else all(res)
+    ok = matched if c.get("action") != "skip_if" else not matched
+    return ok, "; ".join(why)
+
+
+def _button_action(b):
+    k = b["kind"]
+    ent = b.get("entity_id")
+    if k in ("toggle", "turn_on", "turn_off"):
+        return {"type": "service", "service": f"homeassistant.{k}", "data": json.dumps({"entity_id": ent})}
+    if k == "automation":
+        return {"type": "service", "service": "automation.trigger", "data": json.dumps({"entity_id": ent, "skip_condition": True})}
+    if k == "script":
+        return {"type": "service", "service": "script.turn_on", "data": json.dumps({"entity_id": ent})}
+    if k == "scene":
+        return {"type": "service", "service": "scene.turn_on", "data": json.dumps({"entity_id": ent})}
+    if k == "press":
+        return {"type": "service", "service": f"{ent.split('.')[0]}.press", "data": json.dumps({"entity_id": ent})}
+    return {**b, "type": k}  # service / set_entity / event har samma format som åtgärder
+
+
+async def press_button(key, index):
+    """Kör egen knapp nummer index för en väntande påminnelse. Returnerar True om något kördes."""
+    def load():
+        c = store.conn()
+        try:
+            r = _pending_row(c, key)
+            return dict(r) if r else None
+        finally:
+            c.close()
+    p = await asyncio.to_thread(load)
+    if not p or p["status"] not in ("open", "snoozed", "deferred"):
+        return False
+    snap = store.jl(p["snapshot"], {})
+    btns = (snap.get("opts") or {}).get("custom_buttons") or []
+    if not (0 <= int(index) < len(btns)):
+        return False
+    b = btns[int(index)]
+    d = await asyncio.to_thread(defaults_sync)
+    ctx = build_ctx(snap, p["occ_ts"], now(), 1)
+    try:
+        await run_action({**_button_action(b), "enabled": True}, snap, ctx, d)
+        await hist("button", snap.get("title", ""), b["label"], p["rem_id"], p["occ_ts"])
+    except Exception as e:
+        log.warning("knapp %s: %s", b["label"], e)
+        await hist("error", snap.get("title", ""), f"{b['label']}: {e}", p["rem_id"], p["occ_ts"])
+        return False
+    await ha.fire_event("reminders_pro_button", {"reminder_id": p["rem_id"], "title": snap.get("title", ""), "label": b["label"],
+                                                 "index": int(index), "token": p["token"]})
+    if b.get("after") == "done":
+        await ack(p["token"], "done", source="button")
+    return True
+
+
 # ------------------------------------------------------------------ utlösning
 def _snapshot(rem, cats):
     cat = cats.get(rem["category_id"]) or {}
@@ -719,7 +919,7 @@ def _snapshot(rem, cats):
 def _needs_ack(snap):
     o = snap.get("opts") or {}
     has_push = any(a["type"] == "push" and a.get("enabled", True) for a in snap.get("actions") or [])
-    return bool(o.get("repeat", {}).get("enabled") or (o.get("buttons", True) and has_push))
+    return bool(o.get("repeat", {}).get("enabled") or ((o.get("buttons", True) or o.get("custom_buttons")) and has_push))
 
 
 def _supersede_sync(rem_id):
@@ -785,6 +985,10 @@ async def fire(rem, occ_ts, via="schedule"):
     snap = _snapshot(rem, cats)
     opts = snap["opts"]
     if via == "schedule":
+        ok_c, why = await conditions_ok(opts, build_ctx(snap, occ_ts, t))
+        if not ok_c:
+            await hist("cond_skip", rem["title"], why[:300], rem["id"], occ_ts)
+            return
         if not opts.get("ignore_quiet") and quiet_now(d, t):
             if d.get("quiet_mode") == "skip":
                 await hist("quiet_skip", rem["title"], "", rem["id"], occ_ts)
@@ -1050,6 +1254,8 @@ async def handle_event(ev):
     token = parts[-1]
     if kind == "snooze" and len(parts) >= 4:
         await ack(token, "snooze", int(parts[2] or 0) or None, source="push")
+    elif kind == "btn" and len(parts) >= 4:
+        await press_button(token, int(parts[2] or 0))
     elif kind in ("done", "skip"):
         await ack(token, kind, source="push")
 
@@ -1059,6 +1265,8 @@ async def handle_command(data):
     key = data.get("token") or data.get("pending_id")
     if cmd in ("done", "skip", "snooze") and key:
         await ack(key, cmd, data.get("minutes"), source="command")
+    elif cmd == "button" and key:
+        await press_button(key, int(data.get("index") or 0))
     elif cmd == "quick":
         await asyncio.to_thread(quick_sync, data)
         asyncio.create_task(publish_sensors())
@@ -1101,7 +1309,7 @@ def today_sync(t):
         cats = _cat_map(c)
         rows = [rem_dict(r) for r in c.execute("select * from reminders where enabled=1")]
         hist_rows = c.execute("select rem_id,occ_ts,kind from history where occ_ts between ? and ? and kind in "
-                              "('fired','done','skipped','missed','quiet_skip','home_skip','error') order by id", (d0, d1)).fetchall()
+                              "('fired','done','skipped','missed','quiet_skip','home_skip','cond_skip','error') order by id", (d0, d1)).fetchall()
     finally:
         c.close()
     st = {(h["rem_id"], h["occ_ts"]): h["kind"] for h in hist_rows}

@@ -1,7 +1,13 @@
 # Changelog
 
+## 1.1.0
+- **Own buttons in the mobile notification:** toggle / turn on / turn off an entity, start an automation, run a script, activate a scene, press a button entity, call any service, set an entity or fire an event. Optionally acknowledge the reminder on press. Choose which of Done · Snooze · Skip to keep (Android shows 3 buttons in total)
+- **Android TV / Fire TV notification** (Notifications for Android TV): duration, position, text size, transparency, colour, icon and image
+- **Conditions on entity state:** only send if / skip if, all or any of several conditions (equals, is not, greater/less than, contains, is one of), on state or attribute, values may use variables
+- New history entries *Button pressed* and *Condition not met*, new event `reminders_pro_button` and command `{"cmd":"button","token":"…","index":0}
+
 ## 1.0.0
-First release of **Reminders Pro · Påminnelser Pro** – a pure reminder add-on.
+First release of **Reminders Pro · Påminnelser Pro** – a pure reminder add-on (nothing to do with EPG).
 - Fully dynamic repeats: every N minutes / hours / days / weeks / months / years; several times per day, repeated times (every 20 min between 08 and 17), weekdays, specific month days, "last Friday", "first Monday", yearly dates
 - Start, end, "after N times", exception dates, pause; correct daylight-saving handling
 - No-code form with a live preview of the next 10 occurrences

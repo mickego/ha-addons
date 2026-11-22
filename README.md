@@ -19,6 +19,7 @@ Open the **Påminnelser** panel in the sidebar after starting the add-on. Docume
 - Own text with `{title}`, `{date}`, `{state:sensor.x}` …
 - Quiet hours (postpone or skip), only-if-home
 - `calendar.reminders_pro`, `sensor.reminders_pro_*`, events, dashboard cards
+- Own buttons that toggle entities, start automations or call services; Android TV / Fire TV notification; conditions on entity state
 - Categories/colours, export/import
 
 ---

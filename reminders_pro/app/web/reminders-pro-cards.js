@@ -86,7 +86,7 @@ class RPToday extends RPBase {
     const s = this.st(this._c.entity), tr = this.tr;
     let items = ((s && s.attributes && s.attributes.items) || []);
     if (this._c.hide_done) items = items.filter(i => i.status === "upcoming");
-    const ic = {upcoming: "⏳", fired: "🔔", done: "✓", skipped: "⤼", missed: "⚠️", quiet_skip: "🔕", home_skip: "🏠", error: "⚠️"};
+    const ic = {upcoming: "⏳", fired: "🔔", done: "✓", skipped: "⤼", missed: "⚠️", quiet_skip: "🔕", home_skip: "🏠", cond_skip: "🚫", error: "⚠️"};
     return this.frame("🗓️", this._c.title || tr.today, items.length ? items.map(i => `<div class="row ${i.status === "upcoming" ? "" : "past"}"><span class="tm">${esc(i.time)}</span><span class="dot" style="background:${esc(i.color || "var(--primary-color)")}"></span><div class="grow"><div class="t">${esc(i.title)}</div></div><span title="${esc(tr[i.status] || "")}">${ic[i.status] || ""}</span></div>`).join("") : `<div class="empty">${tr.nothing_today}</div>`);
   }
   getCardSize() { return 3; }
