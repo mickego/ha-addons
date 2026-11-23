@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0
+- **Advance notice for any reminder:** add e.g. "7 days before" and "1 day before" under Options. An extra notification (without buttons) is sent before each occurrence. New variable `{age}` with an optional birth/start year ("{title} turns {age}")
+- **After last done:** new mode where the next occurrence is counted from the day you press Done (or "Done now" on the card) – for filter changes and similar. New command `{"cmd":"done_now","id":…}`
+- **From an entity:** the reminder fires when entity conditions are met (optionally held for N minutes, with cooldown) and again only after the conditions were unmet in between
+- **Category sensor:** tick 📅 on a category in Settings to get `sensor.reminders_pro_<category>` with the next reminder's title, days left and date
+- New history entry *Advance notice sent*
+
 ## 1.2.0
 - **Own sensor per reminder:** tick "Create its own sensor in HA" under Options. You get `sensor.reminders_pro_<name>` whose state is the next occurrence (timestamp – shows e.g. "in 5 days" in the app and dashboards) with attributes `local`, `local_date`, `local_time`, `days_left`, `hours_until`, `upcoming` (next 5), `last_fired`, `paused_until` and more. Respects pause, skip-next and exceptions
 

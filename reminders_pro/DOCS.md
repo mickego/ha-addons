@@ -87,6 +87,13 @@ Automation example:
 
 Pressing a custom button fires the event `reminders_pro_button` (`label`, `index`, `token`, `title`). You can also press a button from an automation: event `reminders_pro_command` with `{"cmd":"button","token":"…","index":0}`.
 
+## 4c. Advance notice, after-last-done, entity triggers and category sensors
+
+- **Advance notice:** Options → Advance notice. Add one or more "N minutes/hours/days/weeks before". Works for every reminder. Use `{age}` with a birth year, e.g. "{title} turns {age}".
+- **After last done:** under *When* choose *After last done*. The next occurrence is counted from the day you press Done (or *Done now*).
+- **From an entity:** under *When* choose *From an entity*. Fires when the conditions are met (optionally for at least N minutes); fires again only after they were unmet in between, with an optional cooldown.
+- **Category sensor:** Settings → tick 📅 on a category. `sensor.reminders_pro_<category>` shows the next reminder with title, days left and date.
+
 ## 5. Manual installation of calendar and cards
 
 If the add-on cannot reach your configuration folder, copy `custom_components/reminders_pro` and `www/reminders-pro-cards.js` from the add-on's download area yourself, restart Home Assistant and add `/local/reminders-pro-cards.js` as a *JavaScript module* under *Dashboards → Resources*.
@@ -182,6 +189,13 @@ Automationsexempel:
 **Villkor (undantag på entitetsstatus).** Under *Alternativ → Villkor* väljer du **Skicka bara om …** eller **Hoppa över om …**, om *alla* eller *något* villkor ska stämma, och lägger till rader: entitet, valfritt attribut, jämförelse (är lika med, är inte, större än, minst, mindre än, högst, innehåller, är någon av) och värde. Exempel: `sensor.utetemp` mindre än `5`; `person.anna` är lika med `home`; `sensor.x` är någon av `on, open`. Värdet får innehålla variabler, t.ex. `{state:input_number.gräns}`. En överhoppad påminnelse syns i Historik som *Villkor ej uppfyllt*. Testkörning ignorerar villkor.
 
 När en egen knapp trycks skickas eventet `reminders_pro_button` (`label`, `index`, `token`, `title`). Du kan också trycka en knapp från en automation: event `reminders_pro_command` med `{"cmd":"button","token":"…","index":0}`.
+
+## 4c. Förvarning, efter senast utfört, entitetsutlösare och kategorisensorer
+
+- **Förvarning:** Alternativ → Förvarning. Lägg till en eller flera ”N minuter/timmar/dagar/veckor före”. Gäller alla påminnelser. Använd `{age}` med födelseår, t.ex. ”{title} fyller {age} år”.
+- **Efter senast utfört:** välj *Efter senast utfört* under *När*. Nästa tillfälle räknas från den dag du trycker Klart (eller *Utfört nu*).
+- **Från en entitet:** välj *Från en entitet* under *När*. Utlöses när villkoren uppfylls (valfritt i minst N minuter) och igen först när de varit ouppfyllda emellan, med valfri spärrtid.
+- **Kategorisensor:** Inställningar → bocka 📅 vid en kategori. `sensor.reminders_pro_<kategori>` visar nästa påminnelse med titel, dagar kvar och datum.
 
 ## 5. Manuell installation av kalender och kort
 

@@ -8,7 +8,8 @@ import re
 import unicodedata
 import secrets
 import time
-from datetime import datetime, timedelta, timezone
+import calendar
+from datetime import date, datetime, timedelta, timezone
 
 import ha
 import recur
@@ -214,6 +215,26 @@ def clean_conditions(c):
             "mode": "any" if c.get("mode") == "any" else "all", "items": items}
 
 
+ADV_UNITS = {"minute": 60, "hour": 3600, "day": 86400, "week": 604800}
+
+
+def clean_advance(lst):
+    out, seen = [], set()
+    for a in (lst or [])[:6]:
+        unit = a.get("unit")
+        if unit not in ADV_UNITS:
+            raise ApiError("err_advance", str(unit))
+        try:
+            n = max(1, min(int(a.get("n")), 9999))
+        except (TypeError, ValueError):
+            raise ApiError("err_advance", str(a.get("n")))
+        if (n, unit) not in seen:
+            seen.add((n, unit))
+            out.append({"n": n, "unit": unit})
+    out.sort(key=lambda a: -a["n"] * ADV_UNITS[a["unit"]])
+    return out
+
+
 def clean_opts(o):
     o = o or {}
     r = o.get("repeat") or {}
@@ -222,6 +243,7 @@ def clean_opts(o):
                    "every_min": max(1, min(int(r.get("every_min") or 5), 1440)),
                    "max": max(1, min(int(r.get("max") or 12), 1000))},
         "sensor": bool(o.get("sensor")),
+        "advance": clean_advance(o.get("advance")),
         "buttons": bool(o.get("buttons", True)),
         "std_buttons": [k for k in ("done", "snooze", "skip") if k in (o.get("std_buttons") or ["done", "snooze", "skip"])],
         "custom_buttons": clean_buttons(o.get("custom_buttons")),
@@ -233,6 +255,8 @@ def clean_opts(o):
         "duration_min": max(1, min(int(o.get("duration_min") or 15), 1440)),
         "url": str(o.get("url") or "").strip(),
     }
+    if o.get("base_year") not in (None, ""):
+        out["base_year"] = max(1800, min(int(o["base_year"]), 2200))
     for k, lo, hi in (("snooze_min", 1, 1440), ("grace_min", 0, 10080)):
         if o.get(k) not in (None, ""):
             out[k] = max(lo, min(int(o[k]), hi))
@@ -273,9 +297,9 @@ def insert_sync(b):
     c = store.conn()
     try:
         cur = c.execute(
-            "insert into reminders(title,note,category_id,rule,actions,opts,enabled,next_at,created,updated) "
-            "values(?,?,?,?,?,?,?,?,?,?)",
-            (f["title"], f["note"], f["category_id"], f["rule"], f["actions"], f["opts"], f["enabled"], nxt, t, t))
+            "insert into reminders(title,note,category_id,rule,actions,opts,enabled,next_at,created,updated,adv_checked) "
+            "values(?,?,?,?,?,?,?,?,?,?,?)",
+            (f["title"], f["note"], f["category_id"], f["rule"], f["actions"], f["opts"], f["enabled"], nxt, t, t, t))
         c.commit()
         return cur.lastrowid
     finally:
@@ -296,8 +320,8 @@ def update_sync(rid, b):
         if "paused_until" in b:
             paused = None if b["paused_until"] in (None, "", 0) else int(b["paused_until"])
         c.execute("update reminders set title=?,note=?,category_id=?,rule=?,actions=?,opts=?,enabled=?,next_at=?,updated=?, "
-                  "paused_until=? where id=?",
-                  (f["title"], f["note"], f["category_id"], f["rule"], f["actions"], f["opts"], enabled, nxt, t, paused, rid))
+                  "paused_until=?,adv_checked=? where id=?",
+                  (f["title"], f["note"], f["category_id"], f["rule"], f["actions"], f["opts"], enabled, nxt, t, paused, t, rid))
         c.commit()
     finally:
         c.close()
@@ -378,7 +402,10 @@ def duplicate_sync(rid):
 def categories_sync():
     c = store.conn()
     try:
-        return [dict(r) for r in c.execute("select * from categories order by name collate nocase")]
+        out = [dict(r) for r in c.execute("select * from categories order by name collate nocase")]
+        for x in out:
+            x["sensor_entity"] = _SENSOR_MAP.get(f"c{x['id']}")
+        return out
     finally:
         c.close()
 
@@ -391,13 +418,14 @@ def category_save_sync(b):
     if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
         raise ApiError("err_color")
     icon = str(b.get("icon") or "mdi:bell")[:60]
+    sensor = 1 if b.get("sensor") else 0
     c = store.conn()
     try:
         if b.get("id"):
-            c.execute("update categories set name=?,color=?,icon=? where id=?", (name, color, icon, int(b["id"])))
+            c.execute("update categories set name=?,color=?,icon=?,sensor=? where id=?", (name, color, icon, sensor, int(b["id"])))
             cid = int(b["id"])
         else:
-            cid = c.execute("insert into categories(name,color,icon) values(?,?,?)", (name, color, icon)).lastrowid
+            cid = c.execute("insert into categories(name,color,icon,sensor) values(?,?,?,?)", (name, color, icon, sensor)).lastrowid
         c.commit()
         return cid
     finally:
@@ -426,8 +454,10 @@ def view(rem, cats, t, c=None):
         st = "off"
     elif paused:
         st = "paused"
+    elif rem["rule"].get("freq") == "entity":
+        st = "active"
     elif rem["next_at"] is None:
-        st = "ended"
+        st = "awaiting" if rem["rule"].get("freq") == "after" else "ended"
     else:
         st = "active"
     cat = cats.get(rem["category_id"])
@@ -613,8 +643,11 @@ def build_ctx(snap, occ_ts, t, attempt=1):
         "title": snap["title"], "message": snap.get("note") or "", "category": snap.get("category") or "",
         "date": dt.strftime("%Y-%m-%d"), "time": dt.strftime("%H:%M"), "weekday": names[dt.weekday()],
         "id": str(snap.get("rem_id") or ""), "attempt": str(attempt),
-        "now": datetime.fromtimestamp(t, tz).strftime("%H:%M"), "n": "", "remaining": "", "next": "",
+        "now": datetime.fromtimestamp(t, tz).strftime("%H:%M"), "n": "", "remaining": "", "next": "", "age": "",
     }
+    by = (snap.get("opts") or {}).get("base_year")
+    if by:
+        ctx["age"] = str(dt.year - int(by))
     blob = json.dumps([snap.get("title"), snap.get("note"), snap.get("actions")], ensure_ascii=False)
     if tpl.uses(blob, "n") or tpl.uses(blob, "remaining") or tpl.uses(blob, "next"):
         rule = snap.get("rule")
@@ -840,14 +873,11 @@ def compare(op, actual, expected):
     return same if op == "eq" else not same
 
 
-async def conditions_ok(opts, ctx):
-    """True om påminnelsen får köras. Returnerar (ok, förklaring)."""
-    c = opts.get("conditions") or {}
-    if not c.get("enabled") or not c.get("items"):
-        return True, ""
+async def eval_items(items, mode, ctx, states=None):
+    """Utvärderar en lista entitetsvillkor. Returnerar (uppfyllt, förklaring)."""
     res, why = [], []
-    for it in c["items"]:
-        st = await ha.get_state(it["entity_id"])
+    for it in items:
+        st = states.get(it["entity_id"]) if states is not None else await ha.get_state(it["entity_id"])
         if not st:
             actual = None
         elif it.get("attribute"):
@@ -858,9 +888,17 @@ async def conditions_ok(opts, ctx):
         r = compare(it["op"], actual, exp)
         res.append(r)
         why.append(f"{it['entity_id']}{'.' + it['attribute'] if it.get('attribute') else ''} {it['op']} {exp} -> {actual}")
-    matched = any(res) if c.get("mode") == "any" else all(res)
+    return (any(res) if mode == "any" else all(res)), "; ".join(why)
+
+
+async def conditions_ok(opts, ctx):
+    """True om påminnelsen får köras. Returnerar (ok, förklaring)."""
+    c = opts.get("conditions") or {}
+    if not c.get("enabled") or not c.get("items"):
+        return True, ""
+    matched, why = await eval_items(c["items"], c.get("mode"), ctx)
     ok = matched if c.get("action") != "skip_if" else not matched
-    return ok, "; ".join(why)
+    return ok, why
 
 
 def _button_action(b):
@@ -1013,7 +1051,61 @@ async def fire(rem, occ_ts, via="schedule"):
     ok, errs = await deliver(snap, occ_ts, d, token=token, attempt=1, via=via)
     if via != "test":
         await asyncio.to_thread(_after_fire_sync, rem["id"], t, opts.get("auto_delete") and rem["rule"].get("freq") == "once")
+        if rem["rule"].get("freq") == "after" and not token:
+            await asyncio.to_thread(reschedule_after_sync, rem["id"], t)
     asyncio.create_task(publish_sensors())
+
+
+def add_units(d, n, unit):
+    if unit == "day":
+        return d + timedelta(days=n)
+    if unit == "week":
+        return d + timedelta(weeks=n)
+    y, m = recur._add_months(d.year, d.month, n if unit == "month" else n * 12)
+    return date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
+
+
+def reschedule_after_sync(rid, base_ts):
+    """'Efter senast utfört': nästa tillfälle = basdatum + intervall. Returnerar True om regeln var av typen after."""
+    c = store.conn()
+    try:
+        row = c.execute("select rule from reminders where id=?", (rid,)).fetchone()
+        if not row:
+            return False
+        rule = store.jl(row["rule"], {})
+        if rule.get("freq") != "after":
+            return False
+        tz = tzinfo()
+        base = datetime.fromtimestamp(base_ts, tz).date()
+        nd = add_units(base, int(rule["interval"]), rule["unit"])
+        hm = (rule.get("start") or "")[11:16] or "09:00"
+        rule["start"] = f"{nd.isoformat()}T{hm}"
+        nxt = recur.next_after(rule, tz, 0, inclusive=True)
+        c.execute("update reminders set rule=?, next_at=?, adv_checked=? where id=?",
+                  (json.dumps(rule, ensure_ascii=False), nxt, now(), rid))
+        c.commit()
+        return True
+    finally:
+        c.close()
+
+
+async def done_now(rid):
+    """Markerar en påminnelse som utfärdad nu: kvitterar öppna notiser och räknar om 'efter senast utfört'."""
+    def pend():
+        c = store.conn()
+        try:
+            return [r["token"] for r in c.execute("select token from pending where rem_id=? and status in ('open','snoozed','deferred')", (rid,))]
+        finally:
+            c.close()
+    toks = await asyncio.to_thread(pend)
+    for tok in toks:
+        await ack(tok, "done", source="manual")
+    t = now()
+    changed = await asyncio.to_thread(reschedule_after_sync, rid, t)
+    if changed and not toks:
+        await hist("done", (await asyncio.to_thread(lambda: (get_sync(rid) or {}).get("title", ""))), "manual", rid, t)
+    asyncio.create_task(publish_sensors())
+    return changed
 
 
 def _after_fire_sync(rem_id, t, delete):
@@ -1140,6 +1232,8 @@ async def ack(key, kind, minutes=None, source="ui"):
     await ha.fire_event("reminders_pro_" + ("snoozed" if kind == "snooze" else "done" if kind == "done" else "skipped"),
                         {"reminder_id": p["rem_id"], "title": snap.get("title", ""), "token": p["token"], "minutes": m,
                          "source": source})
+    if p["rem_id"] and kind in ("done", "skip"):
+        await asyncio.to_thread(reschedule_after_sync, p["rem_id"], t)
     asyncio.create_task(publish_sensors())
     return True
 
@@ -1153,6 +1247,8 @@ async def run_pending_due(p, t):
     if st == "open" and p["repeat_max"] and p["sent"] >= p["repeat_max"]:
         await asyncio.to_thread(_close_pending_sync, p["token"], "expired")
         await hist("unacked", snap.get("title", ""), f"{p['sent']}x", p["rem_id"], p["occ_ts"])
+        if p["rem_id"]:
+            await asyncio.to_thread(reschedule_after_sync, p["rem_id"], t)
         await ha.fire_event("reminders_pro_unacknowledged",
                             {"reminder_id": p["rem_id"], "title": snap.get("title", ""), "sent": p["sent"]})
         asyncio.create_task(publish_sensors())
@@ -1270,6 +1366,8 @@ async def handle_command(data):
         await ack(key, cmd, data.get("minutes"), source="command")
     elif cmd == "button" and key:
         await press_button(key, int(data.get("index") or 0))
+    elif cmd == "done_now" and data.get("id"):
+        await done_now(int(data["id"]))
     elif cmd == "quick":
         await asyncio.to_thread(quick_sync, data)
         asyncio.create_task(publish_sensors())
@@ -1285,6 +1383,138 @@ async def handle_command(data):
         else:
             await asyncio.to_thread(toggle_sync, rid, cmd == "enable")
         asyncio.create_task(publish_sensors())
+
+
+# ------------------------------------------------------------------ förvarning
+def _adv_text(a):
+    n, u = a["n"], a["unit"]
+    if u == "minute":
+        return T("adv_min", n=n)
+    return T(f"adv_{u}_1") if n == 1 else T(f"adv_{u}_n", n=n)
+
+
+def _adv_ts(occ, a, tz):
+    """Tidpunkt för förvarningen. Dagar/veckor räknas på väggklockan (sommartid-säkert)."""
+    if a["unit"] in ("minute", "hour"):
+        return occ - a["n"] * ADV_UNITS[a["unit"]]
+    dt = datetime.fromtimestamp(occ, tz)
+    d = dt.date() - timedelta(days=a["n"] * (7 if a["unit"] == "week" else 1))
+    return int(recur.to_ts(d, dt.hour * 60 + dt.minute, tz))
+
+
+def advance_candidates_sync():
+    c = store.conn()
+    try:
+        return [r for r in (rem_dict(x) for x in c.execute("select * from reminders where enabled=1"))
+                if (r["opts"] or {}).get("advance") and r["rule"].get("freq") != "entity"]
+    finally:
+        c.close()
+
+
+def _set_adv_checked_sync(rid, t):
+    c = store.conn()
+    try:
+        c.execute("update reminders set adv_checked=? where id=?", (t, rid))
+        c.commit()
+    finally:
+        c.close()
+
+
+async def process_advance(rem, t):
+    last = rem.get("adv_checked")
+    if last is None or t < last:
+        await asyncio.to_thread(_set_adv_checked_sync, rem["id"], t)
+        return
+    if t - last < 45:
+        return
+    d = await asyncio.to_thread(defaults_sync)
+    grace = int(rem["opts"].get("grace_min", d["grace_min"])) * 60
+    tz = tzinfo()
+    todo = []
+    for a in rem["opts"]["advance"]:
+        off = a["n"] * ADV_UNITS[a["unit"]]
+        for occ in recur.occurrences_between(rem["rule"], tz, last + off - 7200, t + off + 7200, 200):
+            p = _adv_ts(occ, a, tz)
+            if rem["paused_until"] and rem["paused_until"] > occ:
+                continue
+            if last < p <= t and t - p <= grace:
+                todo.append((p, occ, a))
+    await asyncio.to_thread(_set_adv_checked_sync, rem["id"], t)
+    for p, occ, a in sorted(todo)[-4:]:
+        try:
+            await fire_advance(rem, occ, a, t, d)
+        except Exception:
+            log.exception("förvarning %s", rem.get("id"))
+
+
+async def fire_advance(rem, occ, a, t, d):
+    cats = {c["id"]: c for c in await asyncio.to_thread(categories_sync)}
+    snap = _snapshot(rem, cats)
+    opts = snap["opts"]
+    ctx = build_ctx(snap, occ, t)
+    ok_c, why = await conditions_ok(opts, ctx)
+    if not ok_c:
+        await hist("cond_skip", rem["title"], why[:300], rem["id"], occ)
+        return
+    if not opts.get("ignore_quiet") and quiet_now(d, t):
+        await hist("quiet_skip", rem["title"], "", rem["id"], occ)
+        return
+    if opts.get("only_home") and not await anyone_home(d):
+        await hist("home_skip", rem["title"], "", rem["id"], occ)
+        return
+    when = _adv_text(a)
+    prefix = f"⏰ {T('adv_in', x=when)} · "
+    ok, errs = 0, []
+    for act in snap.get("actions") or []:
+        if act.get("enabled", True) and act["type"] in ALERT:
+            try:
+                await run_action(act, snap, ctx, d, token=None, prefix=prefix)
+                ok += 1
+            except Exception as e:
+                errs.append(f"{act['type']}: {e}")
+    await hist("error" if errs and not ok else "advance", rem["title"], "; ".join(errs) if errs else when, rem["id"], occ)
+    await ha.fire_event("reminders_pro_advance", {**ctx, "reminder_id": rem["id"], "before": when,
+                                                   "minutes_before": round((occ - t) / 60)})
+
+
+# ------------------------------------------------------------------ entitetsutlösare
+def trigger_rows_sync():
+    c = store.conn()
+    try:
+        return [r for r in (rem_dict(x) for x in c.execute("select * from reminders where enabled=1"))
+                if r["rule"].get("freq") == "entity"]
+    finally:
+        c.close()
+
+
+async def check_triggers(t):
+    rows = await asyncio.to_thread(trigger_rows_sync)
+    if not rows:
+        return
+    states = {x["entity_id"]: x for x in await ha.all_states(max_age=10)}
+    cats = {c["id"]: c for c in await asyncio.to_thread(categories_sync)}
+    for rem in rows:
+        try:
+            tr = rem["rule"]["trigger"]
+            snap = _snapshot(rem, cats)
+            true, why = await eval_items(tr["items"], tr["mode"], build_ctx(snap, t, t), states)
+            key = f"trig_{rem['id']}"
+            st = await asyncio.to_thread(setting_get_sync, key, None) or {"since": None, "last": 0, "armed": True}
+            before = json.dumps(st, sort_keys=True)
+            paused = bool(rem["paused_until"] and rem["paused_until"] > t)
+            if true:
+                if st["since"] is None:
+                    st["since"] = t
+                if st["armed"] and not paused and t - st["since"] >= tr["hold_min"] * 60 and t - st.get("last", 0) >= tr["cooldown_min"] * 60:
+                    st["armed"], st["last"] = False, t
+                    await asyncio.to_thread(setting_set_sync, key, st)
+                    await fire(rem, t, "schedule")
+            else:
+                st["since"], st["armed"] = None, True
+            if json.dumps(st, sort_keys=True) != before:
+                await asyncio.to_thread(setting_set_sync, key, st)
+        except Exception:
+            log.exception("utlösare %s", rem.get("id"))
 
 
 # ------------------------------------------------------------------ sensorer
@@ -1348,8 +1578,12 @@ def _slug(title):
     return re.sub(r"[^a-z0-9]+", "_", s).strip("_")[:40] or "paminnelse"
 
 
+def _when_text(days):
+    return T("sum_today") if days == 0 else (T("sum_tomorrow") if days == 1 else T("sum_days", n=days))
+
+
 def own_sensors_sync(t):
-    """Egna sensorer för påminnelser med opts.sensor: [(entity_id, state, attrs)]."""
+    """Egna sensorer: per påminnelse (opts.sensor) och per kategori (categories.sensor). [(nyckel, entity_id, state, attrs)]"""
     c = store.conn()
     try:
         cats = _cat_map(c)
@@ -1357,24 +1591,34 @@ def own_sensors_sync(t):
     finally:
         c.close()
     tz = tzinfo()
+    today = datetime.fromtimestamp(t, tz).date()
+    iso = lambda ts: datetime.fromtimestamp(ts, timezone.utc).isoformat()
     used, out = set(), []
+
+    def occs(r, n):
+        got = []
+        if r["enabled"] and r["rule"].get("freq") != "entity":
+            for ts in itertools.islice(recur.iter_occurrences(r["rule"], tz, _live(r, t)), n + 3):
+                if ts >= t:
+                    got.append(ts)
+                if len(got) >= n:
+                    break
+        return got
+
+    def when_attrs(ts):
+        dn = datetime.fromtimestamp(ts, tz)
+        return dict(local=dn.strftime("%Y-%m-%d %H:%M"), local_date=dn.strftime("%Y-%m-%d"), local_time=dn.strftime("%H:%M"),
+                    days_left=(dn.date() - today).days, hours_until=round((ts - t) / 3600, 1), minutes_until=max(0, round((ts - t) / 60)))
+
     for r in rows:
         if not (r["opts"] or {}).get("sensor"):
             continue
-        slug = _slug(r["title"])
-        eid = f"sensor.reminders_pro_{slug}"
+        eid = f"sensor.reminders_pro_{_slug(r['title'])}"
         if eid in used:
             eid = f"{eid}_{r['id']}"
         used.add(eid)
         cat = cats.get(r["category_id"]) or {}
-        occ = []
-        if r["enabled"]:
-            for ts in itertools.islice(recur.iter_occurrences(r["rule"], tz, _live(r, t)), 8):
-                if ts >= t:
-                    occ.append(ts)
-                if len(occ) >= 5:
-                    break
-        iso = lambda ts: datetime.fromtimestamp(ts, timezone.utc).isoformat()
+        occ = occs(r, 5)
         nxt = occ[0] if occ else None
         attrs = {"friendly_name": r["title"], "icon": cat.get("icon") or "mdi:bell-ring", "device_class": "timestamp",
                  "title": r["title"], "message": r["note"], "category": cat.get("name"), "color": cat.get("color"),
@@ -1383,30 +1627,55 @@ def own_sensors_sync(t):
                  "last_fired": iso(r["last_fired"]) if r["last_fired"] else None, "fired_count": r["fired_count"],
                  "upcoming": [iso(x) for x in occ]}
         if nxt:
-            dn = datetime.fromtimestamp(nxt, tz)
-            attrs.update(local=dn.strftime("%Y-%m-%d %H:%M"), local_date=dn.strftime("%Y-%m-%d"), local_time=dn.strftime("%H:%M"),
-                         days_left=(dn.date() - datetime.fromtimestamp(t, tz).date()).days,
-                         hours_until=round((nxt - t) / 3600, 1), minutes_until=max(0, round((nxt - t) / 60)))
+            attrs.update(when_attrs(nxt))
         out.append((r["id"], eid, iso(nxt) if nxt else "unknown", attrs))
+
+    for cid, cat in cats.items():
+        if not cat.get("sensor"):
+            continue
+        eid = f"sensor.reminders_pro_kategori_{_slug(cat['name'])}"
+        if eid in used:
+            eid = f"{eid}_{cid}"
+        used.add(eid)
+        mine = [r for r in rows if r["category_id"] == cid]
+        events = []
+        for r in mine:
+            for ts in occs(r, 4):
+                events.append((ts, r["id"], r))
+        events.sort(key=lambda x: (x[0], x[1]))
+        attrs = {"friendly_name": cat["name"], "icon": cat.get("icon") or "mdi:bell", "category": cat["name"], "color": cat.get("color"),
+                 "count": len(mine),
+                 "upcoming": [{"title": r["title"], "at": iso(ts), "local_date": datetime.fromtimestamp(ts, tz).strftime("%Y-%m-%d"),
+                               "days_left": (datetime.fromtimestamp(ts, tz).date() - today).days, "reminder_id": r["id"]}
+                              for ts, _, r in events[:10]]}
+        if events:
+            ts, _, r = events[0]
+            attrs.update(title=r["title"], message=r["note"], reminder_id=r["id"], next=iso(ts), **when_attrs(ts))
+            attrs["summary"] = f"{r['title']} – {_when_text(attrs['days_left'])}"
+            state_v = r["title"]
+        else:
+            attrs.update(title=None, summary=T("sum_none"))
+            state_v = "unknown"
+        out.append((f"c{cid}", eid, state_v, attrs))
     return out
 
 
 async def publish_own_sensors(t):
     items = await asyncio.to_thread(own_sensors_sync, t)
-    new = {rid: eid for rid, eid, _, _ in items}
+    new = {str(k): eid for k, eid, _, _ in items}
     old = await asyncio.to_thread(setting_get_sync, "pub_sensors", {}) or {}
-    for rid, eid in old.items():
-        if new.get(int(rid)) != eid:
+    for k, eid in old.items():
+        if new.get(str(k)) != eid:
             try:
                 await ha.delete_state(eid)
             except Exception as e:
                 log.debug("ta bort %s: %s", eid, e)
     for _, eid, st, attrs in items:
         await ha.set_state(eid, st, attrs)
-    if {str(k): v for k, v in new.items()} != old:
-        await asyncio.to_thread(setting_set_sync, "pub_sensors", {str(k): v for k, v in new.items()})
+    if new != old:
+        await asyncio.to_thread(setting_set_sync, "pub_sensors", new)
     _SENSOR_MAP.clear()
-    _SENSOR_MAP.update(new)
+    _SENSOR_MAP.update({(k if isinstance(k, str) else int(k)): eid for k, eid, _, _ in items})
 
 
 async def publish_sensors():
@@ -1475,6 +1744,9 @@ async def tick():
             await process_due(rem, t)
         except Exception:
             log.exception("process_due %s", rem.get("id"))
+    for rem in await asyncio.to_thread(advance_candidates_sync):
+        await process_advance(rem, t)
+    await check_triggers(t)
     for p in await asyncio.to_thread(due_pending_sync, t):
         try:
             await run_pending_due(p, t)
@@ -1499,7 +1771,7 @@ def export_sync():
             rems.append({"title": d["title"], "note": d["note"], "category": cat["name"] if cat else None,
                          "rule": d["rule"], "actions": d["actions"], "opts": d["opts"], "enabled": bool(d["enabled"])})
         return {"format": "reminders_pro", "version": 1, "exported": datetime.now(timezone.utc).isoformat(),
-                "categories": [{"name": v["name"], "color": v["color"], "icon": v["icon"]} for v in cats.values()],
+                "categories": [{"name": v["name"], "color": v["color"], "icon": v["icon"], "sensor": bool(v.get("sensor"))} for v in cats.values()],
                 "reminders": rems, "settings": store.get_setting(c, "defaults", {})}
     finally:
         c.close()

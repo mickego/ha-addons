@@ -136,6 +136,12 @@ async def api_reminder_skip(request):
     return J({"skipped": key})
 
 
+async def api_reminder_done_now(request):
+    changed_ = await engine.done_now(rid_of(request))
+    changed()
+    return J({"ok": True, "rescheduled": bool(changed_)})
+
+
 async def api_reminder_dup(request):
     rid = await asyncio.to_thread(engine.duplicate_sync, rid_of(request))
     changed()
@@ -357,6 +363,7 @@ def make_app():
         web.post("/api/reminders/{id}/toggle", api_reminder_toggle),
         web.post("/api/reminders/{id}/pause", api_reminder_pause),
         web.post("/api/reminders/{id}/skip_next", api_reminder_skip),
+        web.post("/api/reminders/{id}/done_now", api_reminder_done_now),
         web.post("/api/reminders/{id}/duplicate", api_reminder_dup),
         web.post("/api/reminders/{id}/test", api_reminder_test),
         web.post("/api/test_action", api_test_action),

@@ -51,6 +51,12 @@ def init():
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
     c = conn()
     c.executescript(SCHEMA)
+    for stmt in ("alter table reminders add column adv_checked integer",
+                 "alter table categories add column sensor integer default 0"):
+        try:
+            c.execute(stmt)
+        except sqlite3.OperationalError:
+            pass
     c.commit()
     c.close()
 

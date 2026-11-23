@@ -2,7 +2,7 @@
 
 Regelformat (JSON, alla tider är lokal väggklocktid i HA:s tidszon):
 {
-  "freq": "once|minute|hour|day|week|month|year",
+  "freq": "once|minute|hour|day|week|month|year|after|entity",
   "interval": 1,                       # var N:e minut/timme/dag/vecka/månad/år
   "start": "2026-11-22" | "2026-11-22T08:00",   # första möjliga tillfälle (och förankring)
   "end": "2027-01-01" | "2027-01-01T12:00" | null,  # sista tillfälle (bara datum = hela dagen)
@@ -28,7 +28,9 @@ import calendar
 import math
 from datetime import date, datetime, timedelta, timezone
 
-FREQS = ("once", "minute", "hour", "day", "week", "month", "year")
+FREQS = ("once", "minute", "hour", "day", "week", "month", "year", "after", "entity")
+AFTER_UNITS = ("day", "week", "month", "year")
+TRIG_OPS = ("eq", "ne", "gt", "ge", "lt", "le", "contains", "in")
 MAX_SCAN = 200_000          # högsta antal steg per sökning
 MAX_COUNT = 100_000
 
@@ -105,6 +107,8 @@ def normalize(rule: dict) -> dict:
     if freq not in FREQS:
         raise RuleError("err_freq")
     r["freq"] = freq
+    if freq == "entity":
+        return _normalize_entity(rule)
     try:
         r["interval"] = max(1, min(int(rule.get("interval") or 1), 100_000))
     except Exception:
@@ -113,8 +117,13 @@ def normalize(rule: dict) -> dict:
         raise RuleError("err_start")
     d, m = _parse_dt(rule["start"])
     r["start"] = d.isoformat() if m is None else f"{d.isoformat()}T{m // 60:02d}:{m % 60:02d}"
-    if freq == "once" and m is None:
+    if freq in ("once", "after") and m is None:
         raise RuleError("err_time")
+    if freq == "after":
+        unit = rule.get("unit")
+        if unit not in AFTER_UNITS:
+            raise RuleError("err_freq")
+        r["unit"] = unit
     if rule.get("end"):
         d2, m2 = _parse_dt(rule["end"])
         r["end"] = d2.isoformat() if m2 is None else f"{d2.isoformat()}T{m2 // 60:02d}:{m2 % 60:02d}"
@@ -183,6 +192,32 @@ def normalize(rule: dict) -> dict:
     return r
 
 
+def _normalize_entity(rule: dict) -> dict:
+    """Regel som utlöses av en entitet (inga klockslag)."""
+    import re as _re
+    t = rule.get("trigger") or {}
+    items = []
+    for it in (t.get("items") or [])[:10]:
+        ent = str(it.get("entity_id") or "").strip()
+        if not ent:
+            continue
+        if not _re.fullmatch(r"[a-z0-9_]+\.[a-z0-9_]+", ent):
+            raise RuleError("err_trigger")
+        op = it.get("op") if it.get("op") in TRIG_OPS else "eq"
+        items.append({"entity_id": ent, "attribute": str(it.get("attribute") or "").strip(), "op": op,
+                      "value": str(it.get("value") if it.get("value") is not None else "")})
+    if not items:
+        raise RuleError("err_trigger")
+    try:
+        hold = max(0, min(int(t.get("hold_min") or 0), 10080))
+        cool = max(0, min(int(t.get("cooldown_min") or 0), 43200))
+    except Exception:
+        raise RuleError("err_trigger")
+    return {"freq": "entity", "interval": 1, "start": "2000-01-01", "end": None, "count": None, "times": [], "series": [],
+            "window": None, "weekdays": [], "monthdays": [], "nth": None, "months": [], "overflow": "clamp", "exdates": [],
+            "trigger": {"mode": "any" if t.get("mode") == "any" else "all", "items": items, "hold_min": hold, "cooldown_min": cool}}
+
+
 # --------------------------------------------------------------------------- tider per dag
 def _tod_minutes(r) -> list[int]:
     out = {_hm(t) for t in r["times"]}
@@ -229,7 +264,7 @@ class _Ctx:
             self.end_ts = to_ts(d2, m2, tz) if m2 is not None else to_ts(d2, 23 * 60 + 59, tz) + 59
         else:
             self.end_ts = None
-        self.tod = _tod_minutes(r) if r["freq"] not in ("minute", "hour", "once") else []
+        self.tod = _tod_minutes(r) if r["freq"] not in ("minute", "hour", "once", "after", "entity") else []
         self.ex_dates = {x for x in r["exdates"] if len(x) == 10}
         self.ex_times = {x for x in r["exdates"] if len(x) > 10}
         self.cnt = r["count"]
@@ -323,6 +358,10 @@ def _raw(c: _Ctx, from_ts: int | None):
     """Alla tillfällen (stigande) efter from_ts (inklusive), före undantag/antal."""
     r = c.r
     f = r["freq"]
+    if f == "entity":
+        return
+    if f == "after":
+        f = "once"
     lo = c.start_ts if from_ts is None else max(c.start_ts, from_ts)
     if f == "once":
         if c.start_ts >= lo:

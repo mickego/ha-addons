@@ -1,12 +1,13 @@
 """Mallar: {variabel}, {state:entitet}, {attr:entitet:attribut}, {name:entitet} (alla språk)."""
 import re
 
-CANON = ["title", "message", "category", "date", "time", "weekday", "n", "remaining", "next", "id", "attempt", "now"]
+CANON = ["title", "message", "category", "date", "time", "weekday", "n", "remaining", "next", "id", "attempt", "now", "age"]
 ALIAS = {
     # svenska
     "titel": "title", "rubrik": "title", "text": "message", "meddelande": "message", "anteckning": "message",
     "kategori": "category", "datum": "date", "tid": "time", "klockan": "time", "veckodag": "weekday",
     "nummer": "n", "nr": "n", "kvar": "remaining", "nästa": "next", "försök": "attempt", "nu": "now",
+    "ålder": "age", "alder": "age", "alter": "age", "âge": "age", "ikä": "age", "years": "age",
     # tyska
     "titel_de": "title", "nachricht": "message", "kategorie": "category", "zeit": "time", "wochentag": "weekday",
     "nächste": "next", "versuch": "attempt", "jetzt": "now",

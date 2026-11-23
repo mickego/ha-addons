@@ -99,6 +99,18 @@ S = {'sv': {'done': 'Klart',
         'pcs': 'kpl'}}
 
 
+_X = {
+ "sv": dict(adv_in="Om {x}", adv_min="{n} min", adv_hour_1="1 timme", adv_hour_n="{n} timmar", adv_day_1="1 dag", adv_day_n="{n} dagar", adv_week_1="1 vecka", adv_week_n="{n} veckor", sum_today="idag", sum_tomorrow="imorgon", sum_days="om {n} dagar", sum_none="Inga kommande"),
+ "en": dict(adv_in="In {x}", adv_min="{n} min", adv_hour_1="1 hour", adv_hour_n="{n} hours", adv_day_1="1 day", adv_day_n="{n} days", adv_week_1="1 week", adv_week_n="{n} weeks", sum_today="today", sum_tomorrow="tomorrow", sum_days="in {n} days", sum_none="None upcoming"),
+ "de": dict(adv_in="In {x}", adv_min="{n} Min.", adv_hour_1="1 Stunde", adv_hour_n="{n} Stunden", adv_day_1="1 Tag", adv_day_n="{n} Tagen", adv_week_1="1 Woche", adv_week_n="{n} Wochen", sum_today="heute", sum_tomorrow="morgen", sum_days="in {n} Tagen", sum_none="Keine anstehend"),
+ "fr": dict(adv_in="Dans {x}", adv_min="{n} min", adv_hour_1="1 heure", adv_hour_n="{n} heures", adv_day_1="1 jour", adv_day_n="{n} jours", adv_week_1="1 semaine", adv_week_n="{n} semaines", sum_today="aujourd'hui", sum_tomorrow="demain", sum_days="dans {n} jours", sum_none="Aucun à venir"),
+ "nb": dict(adv_in="Om {x}", adv_min="{n} min", adv_hour_1="1 time", adv_hour_n="{n} timer", adv_day_1="1 dag", adv_day_n="{n} dager", adv_week_1="1 uke", adv_week_n="{n} uker", sum_today="i dag", sum_tomorrow="i morgen", sum_days="om {n} dager", sum_none="Ingen kommende"),
+ "fi": dict(adv_in="{x} päästä", adv_min="{n} min", adv_hour_1="1 tunti", adv_hour_n="{n} tuntia", adv_day_1="1 päivä", adv_day_n="{n} päivää", adv_week_1="1 viikko", adv_week_n="{n} viikkoa", sum_today="tänään", sum_tomorrow="huomenna", sum_days="{n} päivän päästä", sum_none="Ei tulevia"),
+}
+for _lg, _d in _X.items():
+    S[_lg].update(_d)
+
+
 def T(key, lang=None, **kw):
     lg = lang or state.lang()
     s = S.get(lg, S["en"]).get(key) or S["en"].get(key, key)
