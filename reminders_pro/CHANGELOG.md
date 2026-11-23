@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.1
+- Help extended: variables, `{state:…}`, `{attr:…:…}`, `{name:…}` with examples
+
 ## 1.3.0
 - **Advance notice for any reminder:** add e.g. "7 days before" and "1 day before" under Options. An extra notification (without buttons) is sent before each occurrence. New variable `{age}` with an optional birth/start year ("{title} turns {age}")
 - **After last done:** new mode where the next occurrence is counted from the day you press Done (or "Done now" on the card) – for filter changes and similar. New command `{"cmd":"done_now","id":…}`

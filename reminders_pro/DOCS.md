@@ -94,6 +94,10 @@ Pressing a custom button fires the event `reminders_pro_button` (`label`, `index
 - **From an entity:** under *When* choose *From an entity*. Fires when the conditions are met (optionally for at least N minutes); fires again only after they were unmet in between, with an optional cooldown.
 - **Category sensor:** Settings → tick 📅 on a category. `sensor.reminders_pro_<category>` shows the next reminder with title, days left and date.
 
+## 4d. Variables and entities in texts
+
+`{title} {message} {category} {date} {time} {weekday} {n} {remaining} {next} {attempt} {now} {age}` – the reminder. Entities: `{state:sensor.x}` (state), `{attr:entity:attribute}` (attribute), `{name:entity}` (friendly name). Example: `It is {state:sensor.temp_outside} °C outside`. Works in all texts, conditions, buttons and advance notices; unknown names are left untouched.
+
 ## 5. Manual installation of calendar and cards
 
 If the add-on cannot reach your configuration folder, copy `custom_components/reminders_pro` and `www/reminders-pro-cards.js` from the add-on's download area yourself, restart Home Assistant and add `/local/reminders-pro-cards.js` as a *JavaScript module* under *Dashboards → Resources*.
@@ -196,6 +200,10 @@ När en egen knapp trycks skickas eventet `reminders_pro_button` (`label`, `inde
 - **Efter senast utfört:** välj *Efter senast utfört* under *När*. Nästa tillfälle räknas från den dag du trycker Klart (eller *Utfört nu*).
 - **Från en entitet:** välj *Från en entitet* under *När*. Utlöses när villkoren uppfylls (valfritt i minst N minuter) och igen först när de varit ouppfyllda emellan, med valfri spärrtid.
 - **Kategorisensor:** Inställningar → bocka 📅 vid en kategori. `sensor.reminders_pro_<kategori>` visar nästa påminnelse med titel, dagar kvar och datum.
+
+## 4d. Variabler och entiteter i texter
+
+`{title} {message} {category} {date} {time} {weekday} {n} {remaining} {next} {attempt} {now} {age}` (även `{titel}`, `{datum}`, `{tid}` …) – påminnelsen. Entiteter: `{state:sensor.x}` (tillstånd), `{attr:entitet:attribut}` (attribut), `{name:entitet}` (visningsnamn). Exempel: `Det är {state:sensor.temp_ute} °C ute`. Fungerar i alla texter, villkor, knappar och förvarningar; okända namn lämnas orörda.
 
 ## 5. Manuell installation av kalender och kort
 

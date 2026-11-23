@@ -130,6 +130,18 @@ help_note:"", help:`
 <p><b>Android TV / Fire TV:</b> lägg till sättet <i>Android TV-notis</i> och välj notify-tjänsten för ”Notifications for Android TV”. Du kan ange tid, position, textstorlek, färg, ikon och bild.</p>
 <p><b>Villkor:</b> under <i>Alternativ → Villkor</i> kan du bara skicka om (eller hoppa över om) entiteter har ett visst värde – t.ex. temperatur under 5, en person hemma eller ett attribut som stämmer. Hoppas en påminnelse över syns det i historiken.</p>
 <p><b>Egen sensor:</b> bocka i <i>Skapa en egen sensor</i> under Alternativ så får påminnelsen en sensor (sensor.reminders_pro_namnet) med nästa tillfälle – bra att visa i mobilen.</p>
+<h2>Variabler och entiteter i texten</h2>
+<p>I rubrik, meddelande, TV-text, tal, webhook m.m. byts <code>{...}</code> ut när påminnelsen skickas. Okända namn lämnas orörda.</p>
+<p><b>Påminnelsen:</b> <code>{title}</code> rubrik · <code>{message}</code> anteckning · <code>{category}</code> kategori · <code>{date}</code> datum · <code>{time}</code> klockslag · <code>{weekday}</code> veckodag · <code>{n}</code> tillfälle nr · <code>{remaining}</code> kvar · <code>{next}</code> nästa tillfälle · <code>{attempt}</code> försök (vid upprepning) · <code>{now}</code> nuvarande tid · <code>{age}</code> ålder/år (kräver födelseår). Svenska namn fungerar också: <code>{titel}</code>, <code>{datum}</code>, <code>{tid}</code>, <code>{veckodag}</code>, <code>{nästa}</code>, <code>{ålder}</code>.</p>
+<p><b>Entiteter och sensorer</b> (värdet hämtas i det ögonblick notisen skickas):</p>
+<ul>
+<li><code>{state:sensor.temp_ute}</code> – entitetens tillstånd, t.ex. 21.4 (även <code>{värde:…}</code>)</li>
+<li><code>{attr:climate.vardagsrum:current_temperature}</code> – ett attribut</li>
+<li><code>{name:light.koket}</code> – entitetens visningsnamn</li>
+</ul>
+<p>Exempel: <code>Tvätta! Det är {state:sensor.temp_ute} °C ute, vind {attr:weather.hem:wind_speed} m/s.</code> Saknas entiteten blir värdet tomt. Du kan lägga till enhet själv, t.ex. <code>{state:sensor.temp_ute} °C</code>.</p>
+<p><b>Samma syntax</b> fungerar i villkor (värdefältet), egna knappar, tjänste-/webhook-data och förvarning. Klicka på en variabel i raden ovanför textfälten för att sätta in den.</p>
+<p><b>Tips:</b> <code>{date}</code>/<code>{time}</code> gäller tillfället, <code>{now}</code> är sändtiden. I förvarning visas rubriken som ”⏰ Om 7 dagar · …”.</p>
 <h2>Nytt i 1.3</h2>
 <p><b>Förvarning:</b> under <i>Alternativ → Förvarning</i> lägger du till t.ex. ”7 dagar före” och ”1 dag före”. Du får då en extra notis före varje tillfälle (utan knappar). Ange <i>Födelseår</i> så kan texten innehålla <code>{age}</code>, t.ex. ”{title} fyller {age} år”.</p>
 <p><b>Efter senast utfört:</b> välj <i>Efter senast utfört</i> under När. Nästa tillfälle räknas från den dag du trycker Klart (eller <i>Utfört nu</i> på kortet) – bra för filterbyten och liknande.</p>
@@ -196,6 +208,18 @@ help_note:"", help:`
 <p><b>Android TV / Fire TV:</b> add the way <i>Android TV notification</i> and pick the notify service of “Notifications for Android TV”. You can set duration, position, text size, colour, icon and image.</p>
 <p><b>Conditions:</b> under <i>Options → Conditions</i> only send if (or skip if) entities have a given value – e.g. temperature below 5, a person at home or a matching attribute. A skipped reminder is shown in History.</p>
 <p><b>Own sensor:</b> tick <i>Create its own sensor</i> under Options to get a sensor (sensor.reminders_pro_name) with the next occurrence – handy to show on your phone.</p>
+<h2>Variables and entities in texts</h2>
+<p>In title, message, TV text, speech, webhook etc., <code>{...}</code> is replaced when the reminder is sent. Unknown names are left as they are.</p>
+<p><b>The reminder:</b> <code>{title}</code> title · <code>{message}</code> note · <code>{category}</code> category · <code>{date}</code> date · <code>{time}</code> time of day · <code>{weekday}</code> weekday · <code>{n}</code> occurrence no. · <code>{remaining}</code> remaining · <code>{next}</code> next occurrence · <code>{attempt}</code> attempt (when repeating) · <code>{now}</code> current time · <code>{age}</code> age/years (needs a birth year). Names in the other app languages work too (e.g. <code>{titel}</code>, <code>{datum}</code>, <code>{tid}</code>, <code>{ålder}</code>).</p>
+<p><b>Entities and sensors</b> (value fetched the moment the notification is sent):</p>
+<ul>
+<li><code>{state:sensor.temp_outside}</code> – the entity's state, e.g. 21.4</li>
+<li><code>{attr:climate.living_room:current_temperature}</code> – an attribute</li>
+<li><code>{name:light.kitchen}</code> – the entity's friendly name</li>
+</ul>
+<p>Example: <code>Do the laundry! It is {state:sensor.temp_outside} °C outside, wind {attr:weather.home:wind_speed} m/s.</code> If the entity does not exist the value is empty. Add units yourself, e.g. <code>{state:sensor.temp_outside} °C</code>.</p>
+<p><b>The same syntax</b> works in conditions (value field), custom buttons, service/webhook data and advance notices. Click a variable in the row above the text fields to insert it.</p>
+<p><b>Tip:</b> <code>{date}</code>/<code>{time}</code> refer to the occurrence, <code>{now}</code> is the send time. Advance notices show the title as "⏰ In 7 days · …".</p>
 <h2>New in 1.3</h2>
 <p><b>Advance notice:</b> under <i>Options → Advance notice</i> add e.g. “7 days before” and “1 day before”. You get an extra notification before each occurrence (without buttons). Enter a <i>Birth year</i> to use <code>{age}</code> in texts, e.g. “{title} turns {age}”.</p>
 <p><b>After last done:</b> choose <i>After last done</i> under When. The next occurrence is counted from the day you press Done (or <i>Done now</i> on the card) – great for filter changes and the like.</p>
