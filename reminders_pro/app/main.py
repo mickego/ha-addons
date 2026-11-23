@@ -168,6 +168,14 @@ async def api_preview(request):
     return J(await asyncio.to_thread(engine.preview_sync, b.get("rule") or {}, int(b.get("n") or 10), b.get("after")))
 
 
+async def api_calview(request):
+    q = request.query
+    start = int(q.get("from", 0)); end = int(q.get("to", 0))
+    if end <= start or end - start > 70 * 86400:
+        raise web.HTTPBadRequest(text='{"error": "range"}', content_type="application/json")
+    return J(await asyncio.to_thread(engine.calendar_sync, start, end, q.get("hidden") == "1"))
+
+
 async def api_schedule(request):
     days = max(1, min(int(request.query.get("days", 14)), 120))
     return J(await asyncio.to_thread(engine.agenda_sync, days))
@@ -365,6 +373,7 @@ def make_app():
         web.post("/api/reminders/{id}/skip_next", api_reminder_skip),
         web.post("/api/reminders/{id}/done_now", api_reminder_done_now),
         web.post("/api/reminders/{id}/duplicate", api_reminder_dup),
+        web.get("/api/calview", api_calview),
         web.post("/api/reminders/{id}/test", api_reminder_test),
         web.post("/api/test_action", api_test_action),
         web.post("/api/preview", api_preview),

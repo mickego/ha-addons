@@ -98,6 +98,10 @@ Pressing a custom button fires the event `reminders_pro_button` (`label`, `index
 
 `{title} {message} {category} {date} {time} {weekday} {n} {remaining} {next} {attempt} {now} {age}` – the reminder. Entities: `{state:sensor.x}` (state), `{attr:entity:attribute}` (attribute), `{name:entity}` (friendly name). Example: `It is {state:sensor.temp_outside} °C outside`. Works in all texts, conditions, buttons and advance notices; unknown names are left untouched.
 
+## 4e. Calendar view
+
+The *Calendar* tab shows upcoming occurrences as month or week view (coloured by category; categories hidden with 🙈 are excluded). Click a day to see, edit or add reminders for it.
+
 ## 5. Manual installation of calendar and cards
 
 If the add-on cannot reach your configuration folder, copy `custom_components/reminders_pro` and `www/reminders-pro-cards.js` from the add-on's download area yourself, restart Home Assistant and add `/local/reminders-pro-cards.js` as a *JavaScript module* under *Dashboards → Resources*.
@@ -204,6 +208,10 @@ När en egen knapp trycks skickas eventet `reminders_pro_button` (`label`, `inde
 ## 4d. Variabler och entiteter i texter
 
 `{title} {message} {category} {date} {time} {weekday} {n} {remaining} {next} {attempt} {now} {age}` (även `{titel}`, `{datum}`, `{tid}` …) – påminnelsen. Entiteter: `{state:sensor.x}` (tillstånd), `{attr:entitet:attribut}` (attribut), `{name:entitet}` (visningsnamn). Exempel: `Det är {state:sensor.temp_ute} °C ute`. Fungerar i alla texter, villkor, knappar och förvarningar; okända namn lämnas orörda.
+
+## 4e. Kalendervy
+
+Fliken *Kalender* visar kommande tillfällen som månads- eller veckovy (färgade efter kategori, kategorier dolda med 🙈 visas inte). Klicka på en dag för att se, ändra eller lägga till påminnelser.
 
 ## 5. Manuell installation av kalender och kort
 

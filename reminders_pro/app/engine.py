@@ -568,10 +568,18 @@ def events_between_sync(start, end, limit_per=300, limit=3000):
         dur = int(r["opts"].get("duration_min") or 15) * 60
         for ts in recur.occurrences_between(r["rule"], tz, lo, end, limit_per):
             out.append({"uid": f"rp-{r['id']}-{ts}", "rem_id": r["id"], "title": r["title"], "description": r["note"],
-                        "start": ts, "end": ts + dur, "category": cat.get("name"), "color": cat.get("color")})
+                        "start": ts, "end": ts + dur, "category": cat.get("name"), "color": cat.get("color"),
+                        "category_id": r["category_id"], "hide": bool(cat.get("hide_all"))})
             if len(out) >= limit:
                 return sorted(out, key=lambda x: x["start"])
     return sorted(out, key=lambda x: x["start"])
+
+
+def calendar_sync(start, end, show_hidden=False):
+    """Händelser för kalendervyn i appen (start/end = unix-tid)."""
+    evs = events_between_sync(start, end, limit_per=400, limit=2500)
+    return [{"ts": e["start"], "rem_id": e["rem_id"], "title": e["title"], "note": e["description"], "category": e["category"],
+             "color": e["color"], "category_id": e["category_id"]} for e in evs if show_hidden or not e["hide"]]
 
 
 def ics_sync(past_days=14, future_days=120):

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.0
+- **Calendar view** in the app: new Calendar tab with month and week view, coloured by category. Click a day to see, edit or add reminders. Categories hidden from "All" are excluded
+
 ## 1.3.2
 - **Hide a category from "All":** tick 🙈 on a category in Settings (e.g. a "Templates" category). Help describes how to use a category as templates
 
