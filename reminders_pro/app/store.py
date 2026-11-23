@@ -52,7 +52,8 @@ def init():
     c = conn()
     c.executescript(SCHEMA)
     for stmt in ("alter table reminders add column adv_checked integer",
-                 "alter table categories add column sensor integer default 0"):
+                 "alter table categories add column sensor integer default 0",
+                 "alter table categories add column hide_all integer default 0"):
         try:
             c.execute(stmt)
         except sqlite3.OperationalError:

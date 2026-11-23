@@ -419,13 +419,14 @@ def category_save_sync(b):
         raise ApiError("err_color")
     icon = str(b.get("icon") or "mdi:bell")[:60]
     sensor = 1 if b.get("sensor") else 0
+    hide_all = 1 if b.get("hide_all") else 0
     c = store.conn()
     try:
         if b.get("id"):
-            c.execute("update categories set name=?,color=?,icon=?,sensor=? where id=?", (name, color, icon, sensor, int(b["id"])))
+            c.execute("update categories set name=?,color=?,icon=?,sensor=?,hide_all=? where id=?", (name, color, icon, sensor, hide_all, int(b["id"])))
             cid = int(b["id"])
         else:
-            cid = c.execute("insert into categories(name,color,icon,sensor) values(?,?,?,?)", (name, color, icon, sensor)).lastrowid
+            cid = c.execute("insert into categories(name,color,icon,sensor,hide_all) values(?,?,?,?,?)", (name, color, icon, sensor, hide_all)).lastrowid
         c.commit()
         return cid
     finally:
@@ -1771,7 +1772,7 @@ def export_sync():
             rems.append({"title": d["title"], "note": d["note"], "category": cat["name"] if cat else None,
                          "rule": d["rule"], "actions": d["actions"], "opts": d["opts"], "enabled": bool(d["enabled"])})
         return {"format": "reminders_pro", "version": 1, "exported": datetime.now(timezone.utc).isoformat(),
-                "categories": [{"name": v["name"], "color": v["color"], "icon": v["icon"], "sensor": bool(v.get("sensor"))} for v in cats.values()],
+                "categories": [{"name": v["name"], "color": v["color"], "icon": v["icon"], "sensor": bool(v.get("sensor")), "hide_all": bool(v.get("hide_all"))} for v in cats.values()],
                 "reminders": rems, "settings": store.get_setting(c, "defaults", {})}
     finally:
         c.close()

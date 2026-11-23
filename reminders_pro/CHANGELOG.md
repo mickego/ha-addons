@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.2
+- **Hide a category from "All":** tick 🙈 on a category in Settings (e.g. a "Templates" category). Help describes how to use a category as templates
+
 ## 1.3.1
 - Help extended: variables, `{state:…}`, `{attr:…:…}`, `{name:…}` with examples
 
