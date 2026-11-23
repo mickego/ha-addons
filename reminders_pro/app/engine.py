@@ -676,7 +676,24 @@ def build_ctx(snap, occ_ts, t, attempt=1):
 
 
 async def render(text, ctx):
+    if not ctx.get("_tr"):
+        ctx["_tr"] = 1
+        for k in ("title", "message"):
+            if "{" in str(ctx.get(k, "")):
+                ctx[k] = await tpl.render(ctx[k], {**ctx, k: ""}, ha.get_state)
     return await tpl.render(text, ctx, ha.get_state)
+
+
+async def live_titles(items):
+    """Lägger title_live på påminnelser vars rubrik innehåller {state:…} m.m. (för listor/kalender)."""
+    for it in items:
+        ti = it.get("title") or ""
+        if "{" in ti:
+            try:
+                it["title_live"] = await tpl.render(ti, {"title": "", "category": (it.get("category") or {}).get("name", "") if isinstance(it.get("category"), dict) else ""}, ha.get_state)
+            except Exception:
+                pass
+    return items
 
 
 # ------------------------------------------------------------------ åtgärder

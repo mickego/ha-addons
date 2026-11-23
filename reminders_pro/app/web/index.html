@@ -146,6 +146,7 @@ help_note:"", help:`
 <p>Exempel: <code>Tvätta! Det är {state:sensor.temp_ute} °C ute, vind {attr:weather.hem:wind_speed} m/s.</code> Saknas entiteten blir värdet tomt. Du kan lägga till enhet själv, t.ex. <code>{state:sensor.temp_ute} °C</code>.</p>
 <p><b>Samma syntax</b> fungerar i villkor (värdefältet), egna knappar, tjänste-/webhook-data och förvarning. Klicka på en variabel i raden ovanför textfälten för att sätta in den.</p>
 <p><b>Tips:</b> <code>{date}</code>/<code>{time}</code> gäller tillfället, <code>{now}</code> är sändtiden. I förvarning visas rubriken som ”⏰ Om 7 dagar · …”.</p>
+<p><b>Rubrik med värde:</b> även påminnelsens huvudrubrik kan innehålla t.ex. <code>Ute {state:sensor.temp_ute} °C</code>. Värdet visas i listan och kalendern och byts in i notisen när den skickas. Det sparade namnet är oförändrat.</p>
 <h2>Kalender</h2>
 <p>Fliken <i>Kalender</i> visar kommande tillfällen som månads- eller veckovy, färgade efter kategori. Klicka på en dag för att se dess påminnelser, öppna en för ändring eller lägga till en ny på det datumet. Kategorier som döljs med 🙈 visas inte här. Påminnelser som utlöses från en entitet har ingen fast tid och syns därför inte. Vill du ha kalendern i Home Assistant finns den som kalenderentitet (se Kalender, sensorer och kort).</p>
 <h2>Mallar</h2>
@@ -228,6 +229,7 @@ help_note:"", help:`
 <p>Example: <code>Do the laundry! It is {state:sensor.temp_outside} °C outside, wind {attr:weather.home:wind_speed} m/s.</code> If the entity does not exist the value is empty. Add units yourself, e.g. <code>{state:sensor.temp_outside} °C</code>.</p>
 <p><b>The same syntax</b> works in conditions (value field), custom buttons, service/webhook data and advance notices. Click a variable in the row above the text fields to insert it.</p>
 <p><b>Tip:</b> <code>{date}</code>/<code>{time}</code> refer to the occurrence, <code>{now}</code> is the send time. Advance notices show the title as "⏰ In 7 days · …".</p>
+<p><b>Title with a value:</b> the reminder's main title may also contain e.g. <code>Outside {state:sensor.temp_outside} °C</code>. The value shows in the list and calendar and is inserted into the notification when sent. The stored name is unchanged.</p>
 <h2>Calendar</h2>
 <p>The <i>Calendar</i> tab shows upcoming occurrences as a month or week view, coloured by category. Click a day to see its reminders, open one to edit it or add a new one on that date. Categories hidden with 🙈 are not shown here. Reminders triggered from an entity have no fixed time and so do not appear. For Home Assistant itself there is a calendar entity (see Calendar, sensors and cards).</p>
 <h2>Templates</h2>
@@ -457,7 +459,7 @@ function remCard(r) {
     : el("select", {class: "sm", style: "min-height:30px;padding:2px 6px", onchange: e => { if (e.target.value) act(r, "pause", {days: +e.target.value}, ""); }}, el("option", {value: ""}, "⏸ " + t("pause")), ...[[1, "pause_1"], [3, "pause_3"], [7, "pause_7"], [30, "pause_30"]].map(([d, k]) => el("option", {value: d}, t(k))));
   return el("div", {class: "card rem" + (r.status === "off" || r.status === "ended" ? " off" : ""), style: cc ? "--cc:" + cc : ""},
     el("div", {class: "grow"},
-      el("div", {class: "row"}, el("h3", {class: "grow"}, r.title)),
+      el("div", {class: "row"}, el("h3", {class: "grow"}, r.title_live || r.title)),
       el("div", {class: "small mut", style: "margin:2px 0 6px"}, describe(r.rule)),
       next, el("div", {class: "chips", style: "margin-top:6px"}, ...bd),
       el("div", {class: "acts"},
@@ -537,7 +539,7 @@ async function renderCalendar() {
       const d = addDays(gs, i), list = by[d] || [], other = vw === "month" && d.slice(0, 7) !== ref.slice(0, 7), max = vw === "week" ? 99 : 3;
       cells.push(el("div", {class: "cal-cell" + (other ? " oth" : "") + (d === today ? " today" : "") + (d === sel ? " sel" : "") + (vw === "week" ? " wk" : ""), onclick: () => { S.calSel = d; renderCalendar(); }},
         el("div", {class: "cal-n"}, String(+d.slice(8))),
-        ...list.slice(0, max).map(e => el("div", {class: "cal-ev", title: hm(e.ts) + " " + e.title, style: "background:" + (e.color || "var(--pri)")}, el("span", {class: "t"}, hm(e.ts) + " " + e.title))),
+        ...list.slice(0, max).map(e => el("div", {class: "cal-ev", title: hm(e.ts) + " " + (e.title_live || e.title), style: "background:" + (e.color || "var(--pri)")}, el("span", {class: "t"}, hm(e.ts) + " " + (e.title_live || e.title)))),
         list.length > max ? el("div", {class: "cal-more"}, t("cal_more", {n: list.length - max})) : null));
     }
     const grid = el("div", {class: "cal-grid"}, ...wdn.map(n => el("div", {class: "cal-h"}, n)), ...cells);
@@ -546,7 +548,7 @@ async function renderCalendar() {
       const list = by[sel] || [];
       panel = el("div", {}, el("div", {class: "day"}, fmt(Date.parse(sel + "T12:00:00Z") / 1000, {weekday: "long", day: "numeric", month: "long"})),
         el("div", {class: "card", style: "padding:6px 14px"}, ...(list.length ? list.map(e => el("div", {class: "ag", style: "cursor:pointer", onclick: () => { const r = S.rems.find(x => x.id === e.rem_id); if (r) openEditor(r); }}, el("span", {class: "tm"}, hm(e.ts)), el("span", {class: "dot", style: "background:" + (e.color || "var(--pri)")}),
-          el("div", {class: "grow"}, e.title, e.category ? el("span", {class: "mut small"}, " · " + e.category) : null))) : [el("div", {class: "mut", style: "padding:8px 0"}, t("cal_empty"))]),
+          el("div", {class: "grow"}, e.title_live || e.title, e.category ? el("span", {class: "mut small"}, " · " + e.category) : null))) : [el("div", {class: "mut", style: "padding:8px 0"}, t("cal_empty"))]),
           el("div", {style: "padding:8px 0"}, el("button", {class: "btn sm pri", onclick: () => openEditor(null, sel)}, t("cal_new")))));
     }
     v.replaceChildren(head, grid, panel);

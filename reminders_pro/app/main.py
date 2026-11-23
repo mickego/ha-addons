@@ -88,7 +88,7 @@ async def api_status(request):
 
 
 async def api_reminders(request):
-    return J(await asyncio.to_thread(engine.list_sync))
+    return J(await engine.live_titles(await asyncio.to_thread(engine.list_sync)))
 
 
 async def api_reminder_get(request):
@@ -173,7 +173,7 @@ async def api_calview(request):
     start = int(q.get("from", 0)); end = int(q.get("to", 0))
     if end <= start or end - start > 70 * 86400:
         raise web.HTTPBadRequest(text='{"error": "range"}', content_type="application/json")
-    return J(await asyncio.to_thread(engine.calendar_sync, start, end, q.get("hidden") == "1"))
+    return J(await engine.live_titles(await asyncio.to_thread(engine.calendar_sync, start, end, q.get("hidden") == "1")))
 
 
 async def api_schedule(request):

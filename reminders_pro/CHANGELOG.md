@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.1
+- The main title can contain `{state:…}`, `{attr:…}` etc. Live value in list and calendar and in notifications
+
 ## 1.4.0
 - **Calendar view** in the app: new Calendar tab with month and week view, coloured by category. Click a day to see, edit or add reminders. Categories hidden from "All" are excluded
 
