@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.4
+- New comparison "any value": together with "changed since the last notification" an entity trigger fires on every change. "Changed" options now also work in entity triggers (they were ignored there)
+
 ## 1.4.3
 - "Changed" conditions: an empty value reacts to any change of the entity
 

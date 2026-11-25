@@ -30,7 +30,7 @@ from datetime import date, datetime, timedelta, timezone
 
 FREQS = ("once", "minute", "hour", "day", "week", "month", "year", "after", "entity")
 AFTER_UNITS = ("day", "week", "month", "year")
-TRIG_OPS = ("eq", "ne", "gt", "ge", "lt", "le", "contains", "in")
+TRIG_OPS = ("eq", "ne", "gt", "ge", "lt", "le", "contains", "in", "any")
 MAX_SCAN = 200_000          # högsta antal steg per sökning
 MAX_COUNT = 100_000
 
@@ -204,8 +204,19 @@ def _normalize_entity(rule: dict) -> dict:
         if not _re.fullmatch(r"[a-z0-9_]+\.[a-z0-9_]+", ent):
             raise RuleError("err_trigger")
         op = it.get("op") if it.get("op") in TRIG_OPS else "eq"
-        items.append({"entity_id": ent, "attribute": str(it.get("attribute") or "").strip(), "op": op,
-                      "value": str(it.get("value") if it.get("value") is not None else "")})
+        item = {"entity_id": ent, "attribute": str(it.get("attribute") or "").strip(), "op": op,
+                "value": str(it.get("value") if it.get("value") is not None else "")}
+        ch = it.get("changed") if it.get("changed") in ("last", "within") else ""
+        if op == "any" and not ch:
+            ch = "last"
+        if ch:
+            item["changed"] = ch
+            if ch == "within":
+                try:
+                    item["within_min"] = max(1, min(10080, int(it.get("within_min") or 60)))
+                except (TypeError, ValueError):
+                    item["within_min"] = 60
+        items.append(item)
     if not items:
         raise RuleError("err_trigger")
     try:

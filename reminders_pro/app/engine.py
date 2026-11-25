@@ -166,7 +166,7 @@ def clean_actions(lst):
 
 
 BTN_KINDS = ("toggle", "turn_on", "turn_off", "automation", "script", "scene", "press", "service", "set_entity", "event")
-COND_OPS = ("eq", "ne", "gt", "ge", "lt", "le", "contains", "in")
+COND_OPS = ("eq", "ne", "gt", "ge", "lt", "le", "contains", "in", "any")
 _ENT = re.compile(r"[a-z0-9_]+\.[a-z0-9_]+")
 
 
@@ -895,6 +895,8 @@ def _num(v):
 def compare(op, actual, expected):
     if actual is None:
         return op == "ne"
+    if op == "any":
+        return True
     a, e = str(actual), str(expected)
     if op == "in":
         return a.strip().lower() in [x.strip().lower() for x in e.split(",")]
@@ -1551,7 +1553,9 @@ async def check_triggers(t):
         try:
             tr = rem["rule"]["trigger"]
             snap = _snapshot(rem, cats)
-            true, why = await eval_items(tr["items"], tr["mode"], build_ctx(snap, t, t), states)
+            tctx = build_ctx(snap, t, t)
+            tctx["_last_fired"] = rem["last_fired"] or rem["created"] or t
+            true, why = await eval_items(tr["items"], tr["mode"], tctx, states)
             key = f"trig_{rem['id']}"
             st = await asyncio.to_thread(setting_get_sync, key, None) or {"since": None, "last": 0, "armed": True}
             before = json.dumps(st, sort_keys=True)

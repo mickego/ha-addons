@@ -4,7 +4,7 @@ import os
 import time
 from zoneinfo import ZoneInfo
 
-VERSION = "1.4.3"
+VERSION = "1.4.4"
 LANGS = ("sv", "en", "de", "fr", "nb", "fi")
 OPTIONS_FILE = os.environ.get("OPTIONS_FILE", "/data/options.json")
 CFG: dict = {}
