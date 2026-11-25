@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.3
+- "Changed" conditions: an empty value reacts to any change of the entity
+
+## 1.4.2
+- Entity conditions: per entity choose "changed since the last notification" or "changed within the last N min"
+
 ## 1.4.1
 - The main title can contain `{state:…}`, `{attr:…}` etc. Live value in list and calendar and in notifications
 

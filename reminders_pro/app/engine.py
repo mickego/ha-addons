@@ -209,8 +209,17 @@ def clean_conditions(c):
         if not _ENT.fullmatch(ent):
             raise ApiError("err_entity", ent)
         op = it.get("op") if it.get("op") in COND_OPS else "eq"
-        items.append({"entity_id": ent, "attribute": str(it.get("attribute") or "").strip(), "op": op,
-                      "value": str(it.get("value") if it.get("value") is not None else "")})
+        ch = it.get("changed") if it.get("changed") in ("last", "within") else ""
+        item = {"entity_id": ent, "attribute": str(it.get("attribute") or "").strip(), "op": op,
+                "value": str(it.get("value") if it.get("value") is not None else "")}
+        if ch:
+            item["changed"] = ch
+            if ch == "within":
+                try:
+                    item["within_min"] = max(1, min(10080, int(it.get("within_min") or 60)))
+                except (TypeError, ValueError):
+                    item["within_min"] = 60
+        items.append(item)
     return {"enabled": bool(c.get("enabled")) and bool(items), "action": "skip_if" if c.get("action") == "skip_if" else "run_if",
             "mode": "any" if c.get("mode") == "any" else "all", "items": items}
 
@@ -653,6 +662,7 @@ def build_ctx(snap, occ_ts, t, attempt=1):
         "date": dt.strftime("%Y-%m-%d"), "time": dt.strftime("%H:%M"), "weekday": names[dt.weekday()],
         "id": str(snap.get("rem_id") or ""), "attempt": str(attempt),
         "now": datetime.fromtimestamp(t, tz).strftime("%H:%M"), "n": "", "remaining": "", "next": "", "age": "",
+        "_last_fired": snap.get("last_fired"),
     }
     by = (snap.get("opts") or {}).get("base_year")
     if by:
@@ -899,6 +909,13 @@ def compare(op, actual, expected):
     return same if op == "eq" else not same
 
 
+def _iso_ts(s):
+    try:
+        return int(datetime.fromisoformat(str(s).replace("Z", "+00:00")).timestamp())
+    except Exception:
+        return None
+
+
 async def eval_items(items, mode, ctx, states=None):
     """Utvärderar en lista entitetsvillkor. Returnerar (uppfyllt, förklaring)."""
     res, why = [], []
@@ -911,7 +928,17 @@ async def eval_items(items, mode, ctx, states=None):
         else:
             actual = st.get("state")
         exp = await render(it.get("value", ""), ctx)
-        r = compare(it["op"], actual, exp)
+        chg = it.get("changed")
+        r = True if (chg and st and not str(exp).strip()) else compare(it["op"], actual, exp)
+        if r and chg and st:
+            ts = _iso_ts(st.get("last_updated" if it.get("attribute") else "last_changed"))
+            if ts is None:
+                r = False
+            elif chg == "last":
+                lf = ctx.get("_last_fired")
+                r = lf is None or ts > lf
+            else:
+                r = now() - ts <= int(it.get("within_min") or 60) * 60
         res.append(r)
         why.append(f"{it['entity_id']}{'.' + it['attribute'] if it.get('attribute') else ''} {it['op']} {exp} -> {actual}")
     return (any(res) if mode == "any" else all(res)), "; ".join(why)
@@ -980,7 +1007,8 @@ async def press_button(key, index):
 def _snapshot(rem, cats):
     cat = cats.get(rem["category_id"]) or {}
     return {"rem_id": rem["id"], "title": rem["title"], "note": rem["note"], "category": cat.get("name"),
-            "color": cat.get("color"), "actions": rem["actions"], "opts": rem["opts"], "rule": rem["rule"]}
+            "color": cat.get("color"), "actions": rem["actions"], "opts": rem["opts"], "rule": rem["rule"],
+            "last_fired": rem.get("last_fired") if hasattr(rem, "get") else rem["last_fired"]}
 
 
 def _needs_ack(snap):
